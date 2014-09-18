@@ -1,0 +1,6 @@
+*~
+.sconsign.dblite
+linux
+win32
+win64
+build
