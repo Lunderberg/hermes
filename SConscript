@@ -10,6 +10,6 @@ env.Append(CPPPATH=['#/include'])
 output = []
 for src in Glob('*.cc'):
     exe = env.Program([src,Glob('src/*.cc')])
-    output.append(exe)
+    output.extend(exe)
 
 Return('output')

@@ -6,7 +6,10 @@ import os
 def RecursiveInstall(env, target, src):
     root_items = []
     for src_list in src:
-        root_items.extend(src_list)
+        try:
+            root_items.extend(src_list)
+        except TypeError:
+            root_items.append(src_list)
 
     for root_item in root_items:
         unsearched = [root_item]
@@ -21,7 +24,8 @@ def RecursiveInstall(env, target, src):
                 dir_relative = dir_initial[len(str(base_dir))+1:]
                 output_dir = (os.path.join(str(target),dir_relative)
                               if dir_relative else str(target))
-                env.Install(output_dir,current)
+                env.InstallAs(os.path.join(output_dir,current.name),current)
+
 def TOOL_RECURSIVE_INSTALL(env):
     env.AddMethod(RecursiveInstall)
 
@@ -85,8 +89,8 @@ for env in [win32,win64,linux]:
                      src_dir='.',
                      exports=['env'])
     inst_dir = env['SYS']
+    Execute(Mkdir(env['SYS']))
     env.RecursiveInstall(inst_dir,exe)
     Clean('.',env['SYS'])
 
 Clean('.','build')
-
