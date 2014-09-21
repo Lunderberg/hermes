@@ -15,7 +15,6 @@
 class NetworkIO{
 public:
 	NetworkIO();
-	~NetworkIO();
 	std::shared_ptr<NetworkSocket> connect(std::string server, int port);
 	std::shared_ptr<NetworkSocket> connect(std::string server, std::string port);
 
