@@ -22,6 +22,7 @@ class NetworkSocket{
 public:
 	NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
 								boost::asio::ip::tcp::resolver::iterator endpoint);
+	virtual ~NetworkSocket();
 	void write(const Message& message);
 private:
 	void do_read_header();

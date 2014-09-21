@@ -5,6 +5,7 @@ using boost::asio::ip::tcp;
 NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
 														 boost::asio::ip::tcp::resolver::iterator endpoint)
 	: m_io_service(io_service), m_socket(*m_io_service){
+
 	m_read_body.reserve(max_message_size);
 	boost::asio::async_connect(m_socket, endpoint,
 														 [this](boost::system::error_code ec, tcp::resolver::iterator){
@@ -12,6 +13,11 @@ NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service
 																 do_read_header();
 															 }
 														 });
+}
+
+NetworkSocket::~NetworkSocket(){
+	m_socket.cancel();
+	m_socket.close();
 }
 
 void NetworkSocket::do_read_header(){
