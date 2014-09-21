@@ -11,7 +11,6 @@
 #include "NetworkSocket.hh"
 #include "Message.hh"
 
-
 class NetworkIO{
 public:
 	NetworkIO();

@@ -4,6 +4,8 @@
 #include <algorithm> // for std::copy
 #include <iterator> // for std::back_insertor
 
+#include "ClientNetworkSocket.hh"
+
 using boost::asio::ip::tcp;
 
 NetworkIO::NetworkIO()
@@ -21,7 +23,7 @@ std::shared_ptr<NetworkSocket> NetworkIO::connect(std::string server, int port){
 std::shared_ptr<NetworkSocket> NetworkIO::connect(std::string server, std::string port){
 	tcp::resolver resolver(*m_io_service);
 	auto endpoint = resolver.resolve({server,port});
-	return std::make_shared<NetworkSocket>(m_io_service,endpoint);
+	return std::make_shared<ClientNetworkSocket>(m_io_service,endpoint);
 }
 
 

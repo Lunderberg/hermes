@@ -20,11 +20,11 @@ union network_header{
 
 class NetworkSocket{
 public:
-	NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
-								boost::asio::ip::tcp::resolver::iterator endpoint);
+	NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service);
 	virtual ~NetworkSocket();
 	void write(const Message& message);
-private:
+
+protected:
 	void do_read_header();
 	void do_read_body();
 	void do_write();
