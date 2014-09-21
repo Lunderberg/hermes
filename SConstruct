@@ -70,11 +70,14 @@ win64.Replace(PROGSUFFIX='.exe')
 win64.Append(LINKFLAGS='-static')
 
 #Location of boost static libraries
-linux.Append(LIBS=['pthread',File('/usr/local/lib/libboost_system.a')])
+linux.Append(LIBS=['pthread',
+                   File('/usr/local/lib/libboost_system.a'),
+                   File('/usr/local/lib/libboost_serialization.a'),
+                   ])
 win32.Append(LIBPATH=['/usr/local/boost-w32/lib'])
-win32.Append(LIBS=['boost_system-mt-s','ws2_32','wsock32'])
+win32.Append(LIBS=['boost_system-mt-s','ws2_32','wsock32','boost_serialization-mt-s'])
 win64.Append(LIBPATH=['/usr/local/boost-w64/lib'])
-win64.Append(LIBS=['boost_system-mt-s','ws2_32','wsock32'])
+win64.Append(LIBS=['boost_system-mt-s','ws2_32','wsock32','boost_serialization-mt-s'])
 
 #Threading library
 linux.Append(LIBS=['pthread'])
