@@ -21,7 +21,6 @@ constexpr size_type max_message_size = UINT16_MAX;
 
 class Message{
 public:
-	enum class message_id : id_type {RawTextMessage};
 	virtual void Unpack(const std::string& raw) = 0;
 	virtual std::string Pack() const = 0;
 	virtual id_type GetID() const = 0;
@@ -30,8 +29,7 @@ public:
 #define MESSAGE_CLASS(cls)																	\
 	friend class boost::serialization::access;								\
 	public:																										\
-	enum class id : id_type {id = Message::message_id::cls};	\
-	virtual id_type GetID() const { return id_type(id::id); }	\
+	virtual id_type GetID() const;														\
 	virtual void Unpack(const std::string& raw){							\
 		std::stringstream ss;																		\
 		ss.str(raw);																						\

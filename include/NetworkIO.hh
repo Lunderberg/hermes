@@ -10,12 +10,14 @@
 
 #include "NetworkSocket.hh"
 #include "Message.hh"
+#include "ListenServer.hh"
 
 class NetworkIO{
 public:
 	NetworkIO();
 	std::shared_ptr<NetworkSocket> connect(std::string server, int port);
 	std::shared_ptr<NetworkSocket> connect(std::string server, std::string port);
+	std::shared_ptr<ListenServer> listen(int port);
 
 private:
 	std::shared_ptr<boost::asio::io_service> m_io_service;

@@ -34,12 +34,13 @@ env = Environment(tools=['default',
                   ENV=os.environ)
 env.Append(CPPPATH=['/usr/local/include'])
 
-env['CXXCOMSTR'] = 'Compiling object $TARGETS'
-env['CCCOMSTR'] = 'Compiling object $TARGETS'
-env['ARCOMSTR'] = 'Packing static library $TARGETS'
-env['RANLIBCOMSTR'] = 'Indexing static library $TARGETS'
-env['SHCXXCOMSTR'] = 'Compiling shared object $TARGETS'
-env['LINKCOMSTR'] = 'Linking $TARGETS'
+if not ARGUMENTS.get('VERBOSE'):
+    env['CXXCOMSTR'] = 'Compiling object $TARGETS'
+    env['CCCOMSTR'] = 'Compiling object $TARGETS'
+    env['ARCOMSTR'] = 'Packing static library $TARGETS'
+    env['RANLIBCOMSTR'] = 'Indexing static library $TARGETS'
+    env['SHCXXCOMSTR'] = 'Compiling shared object $TARGETS'
+    env['LINKCOMSTR'] = 'Linking $TARGETS'
 
 win32 = env.Clone()
 win64 = env.Clone()

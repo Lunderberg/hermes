@@ -2,10 +2,27 @@
 
 using boost::asio::ip::tcp;
 
-NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service)
-	: m_io_service(io_service), m_socket(*m_io_service){
+NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
+														 boost::asio::ip::tcp::resolver::iterator endpoint) :
+	m_io_service(io_service), m_socket(*m_io_service){
 
 	m_read_body.reserve(max_message_size);
+	boost::asio::async_connect(m_socket, endpoint,
+														 [this](boost::system::error_code ec, tcp::resolver::iterator){
+															 if(!ec){
+																 do_read_header();
+															 }
+														 });
+}
+
+NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
+														 boost::asio::ip::tcp::socket socket) :
+	m_io_service(io_service), m_socket(std::move(socket)){
+
+	m_io_service->post(
+										 [this](){
+											 do_read_header();
+										 });
 }
 
 NetworkSocket::~NetworkSocket(){
@@ -31,7 +48,7 @@ void NetworkSocket::do_read_body(){
 													boost::asio::buffer(m_read_body.data(),m_read_header.size),
 													[this](boost::system::error_code ec, std::size_t length){
 														if(!ec){
-															auto new_message = Unpack(Message::message_id(m_read_header.id),
+															auto new_message = Unpack(m_read_header.id,
 																												{m_read_body.begin(), m_read_body.end()} );
 															m_read_messages.push_back(std::move(new_message));
 															do_read_header();
