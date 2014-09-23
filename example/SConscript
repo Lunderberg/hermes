@@ -7,9 +7,9 @@ Import('env')
 env.Append(CPPPATH=['/usr/local/include'])
 env.Append(CPPPATH=['include'])
 
-libhermes = SConscript('hermes/SConscript',exports=['env'])
+libhermes = SConscript('../hermes/SConscript',exports=['env'])
 
-env.Append(CPPPATH=['hermes/include'])
+env.Append(CPPPATH=['../hermes/include'])
 
 output = []
 for src in Glob('*.cc'):

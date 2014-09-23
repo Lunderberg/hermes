@@ -90,7 +90,7 @@ for env in [win32,win64,linux]:
     build_dir = os.path.join('build',env['SYS'])
     exe = SConscript('SConscript',
                      variant_dir=build_dir,
-                     src_dir='.',
+                     src_dir='..',
                      exports=['env'])
     inst_dir = env['SYS']
     Execute(Mkdir(env['SYS']))
