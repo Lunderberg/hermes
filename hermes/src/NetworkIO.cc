@@ -10,7 +10,16 @@ using boost::asio::ip::tcp;
 
 NetworkIO::NetworkIO()
 	: m_io_service(new boost::asio::io_service), m_work(*m_io_service), m_thread() {
-	m_thread = std::thread( [this](){ m_io_service->run(); } );
+	m_thread = std::thread( [this](){
+			while(true){
+				try{
+					m_io_service->run();
+				} catch (std::exception& e) {
+					continue;
+				}
+				break;
+			}
+		});
 	//The work object dies with the NetworkIO object,
 	//  allowing the io_service to end once all async operations end.
 	m_thread.detach();

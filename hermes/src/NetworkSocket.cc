@@ -26,7 +26,8 @@ NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service
 }
 
 NetworkSocket::~NetworkSocket(){
-	m_socket.cancel();
+	boost::system::error_code ec;
+	m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
 	m_socket.close();
 }
 
