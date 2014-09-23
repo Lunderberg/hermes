@@ -1,4 +1,4 @@
-#include "NetworkSocket.hh"
+#include "Message.hh"
 
 #include "RawTextMessage.hh"
 

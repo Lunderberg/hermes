@@ -48,8 +48,8 @@ void NetworkSocket::do_read_body(){
 													boost::asio::buffer(m_read_body.data(),m_read_header.size),
 													[this](boost::system::error_code ec, std::size_t length){
 														if(!ec){
-															auto new_message = Unpack(m_read_header.id,
-																												{m_read_body.begin(), m_read_body.end()} );
+															auto new_message = Message::Unpack(m_read_header.id,
+																																 {m_read_body.begin(), m_read_body.end()} );
 															m_read_messages.push_back(std::move(new_message));
 															do_read_header();
 														} else {
