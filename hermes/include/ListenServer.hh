@@ -6,14 +6,15 @@
 
 #include <boost/asio.hpp>
 
-#include "NetworkSocket.hh"
+#include "NetworkIO.hh"
 
-using boost::asio::ip::tcp;
+class NetworkIO;
+class NetworkSocket;
 
 class ListenServer{
 public:
-	ListenServer(std::shared_ptr<boost::asio::io_service> io_service,
-							 tcp::endpoint endpoint);
+	ListenServer(std::shared_ptr<NetworkIO> io,
+							 boost::asio::ip::tcp::endpoint endpoint);
 	bool HasNewConnection(){return m_connections.size();}
 	std::shared_ptr<NetworkSocket> GetConnection(){
 		auto output = m_connections.front();
@@ -23,9 +24,9 @@ public:
 private:
 	void do_accept();
 
-	std::shared_ptr<boost::asio::io_service> m_io_service;
-	tcp::acceptor m_acceptor;
-	tcp::socket m_socket;
+	std::shared_ptr<NetworkIO> m_io;
+	boost::asio::ip::tcp::acceptor m_acceptor;
+	boost::asio::ip::tcp::socket m_socket;
 	std::deque<std::shared_ptr<NetworkSocket> > m_connections;
 };
 

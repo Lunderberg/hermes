@@ -1,12 +1,15 @@
 #include "NetworkSocket.hh"
 
+#include "NetworkIO.hh"
+
 using boost::asio::ip::tcp;
 
-NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
+NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::resolver::iterator endpoint) :
-	m_io_service(io_service), m_socket(*m_io_service){
+	m_io(io), m_socket(*m_io->GetService()){
 
 	m_read_body.reserve(max_message_size);
+
 	boost::asio::async_connect(m_socket, endpoint,
 														 [this](boost::system::error_code ec, tcp::resolver::iterator){
 															 if(!ec){
@@ -15,14 +18,14 @@ NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service
 														 });
 }
 
-NetworkSocket::NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
+NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::socket socket) :
-	m_io_service(io_service), m_socket(std::move(socket)){
+	m_io(io), m_socket(std::move(socket)){
 
-	m_io_service->post(
-										 [this](){
-											 do_read_header();
-										 });
+	m_io->GetService()->post(
+													 [this](){
+														 do_read_header();
+													 });
 }
 
 NetworkSocket::~NetworkSocket(){
@@ -75,14 +78,14 @@ void NetworkSocket::write(const Message& message){
 	std::copy(packed.begin(), packed.end(), std::back_inserter(buffer));
 
 	// Start the writing
-	m_io_service->post(
-										 [this,buffer](){
-											 bool write_in_progress = !m_write_messages.empty();
-											 m_write_messages.push_back(buffer);
-											 if(!write_in_progress){
-												 do_write();
-											 };
-										 });
+	m_io->GetService()->post(
+													 [this,buffer](){
+														 bool write_in_progress = !m_write_messages.empty();
+														 m_write_messages.push_back(buffer);
+														 if(!write_in_progress){
+															 do_write();
+														 };
+													 });
 }
 
 void NetworkSocket::do_write(){

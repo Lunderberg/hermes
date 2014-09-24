@@ -10,11 +10,13 @@
 
 #include "Message.hh"
 
+class NetworkIO;
+
 class NetworkSocket{
 public:
-	NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
+	NetworkSocket(std::shared_ptr<NetworkIO> io,
 								boost::asio::ip::tcp::resolver::iterator endpoint);
-	NetworkSocket(std::shared_ptr<boost::asio::io_service> io_service,
+	NetworkSocket(std::shared_ptr<NetworkIO> io,
 								boost::asio::ip::tcp::socket socket);
 	virtual ~NetworkSocket();
 	void write(const Message& message);
@@ -31,7 +33,7 @@ protected:
 	void do_read_body();
 	void do_write();
 
-	std::shared_ptr<boost::asio::io_service> m_io_service;
+	std::shared_ptr<NetworkIO> m_io;
 	boost::asio::ip::tcp::socket m_socket;
 
 	network_header m_read_header;

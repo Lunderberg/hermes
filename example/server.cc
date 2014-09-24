@@ -1,7 +1,6 @@
 #include <iostream>
 using std::cout;
 using std::endl;
-#include <string>
 
 #include <thread>
 #include <chrono>
@@ -10,8 +9,8 @@ using std::endl;
 #include "NetworkIO.hh"
 
 int main(){
-	NetworkIO n;
-	auto listener = n.listen(5555);
+	auto network = NetworkIO::start();
+	auto listener = network->listen(5555);
 
 	while(true){
 		while(!listener->HasNewConnection()){

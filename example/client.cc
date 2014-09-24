@@ -1,7 +1,6 @@
 #include <iostream>
 using std::cout;
 using std::endl;
-#include <string>
 
 #include <thread>
 #include <chrono>
@@ -10,8 +9,8 @@ using std::endl;
 #include "NetworkIO.hh"
 
 int main(){
-	NetworkIO n;
-	auto connection = n.connect("localhost",5555);
+	auto network = NetworkIO::start();
+	auto connection = network->connect("localhost",5555);
 
 	RawTextMessage msg("Why hello there");
 	connection->write(msg);

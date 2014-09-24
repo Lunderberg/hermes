@@ -5,8 +5,14 @@
 #include <iterator> // for std::back_insertor
 
 #include "NetworkSocket.hh"
+#include "ListenServer.hh"
 
 using boost::asio::ip::tcp;
+
+std::shared_ptr<NetworkIO> NetworkIO::start(){
+	//Can't use std::make_shared because the contstructor is private
+	return std::shared_ptr<NetworkIO>(new NetworkIO);
+}
 
 NetworkIO::NetworkIO()
 	: m_io_service(new boost::asio::io_service), m_work(*m_io_service), m_thread() {
@@ -20,9 +26,11 @@ NetworkIO::NetworkIO()
 				break;
 			}
 		});
-	//The work object dies with the NetworkIO object,
-	//  allowing the io_service to end once all async operations end.
-	m_thread.detach();
+}
+
+NetworkIO::~NetworkIO(){
+	m_io_service->stop();
+	m_thread.join();
 }
 
 std::shared_ptr<NetworkSocket> NetworkIO::connect(std::string server, int port){
@@ -32,10 +40,10 @@ std::shared_ptr<NetworkSocket> NetworkIO::connect(std::string server, int port){
 std::shared_ptr<NetworkSocket> NetworkIO::connect(std::string server, std::string port){
 	tcp::resolver resolver(*m_io_service);
 	auto endpoint = resolver.resolve({server,port});
-	return std::make_shared<NetworkSocket>(m_io_service, endpoint);
+	return std::make_shared<NetworkSocket>(shared_from_this(), endpoint);
 }
 
 std::shared_ptr<ListenServer> NetworkIO::listen(int port){
 	tcp::endpoint endpoint(tcp::v4(), port);
-	return std::make_shared<ListenServer>(m_io_service, endpoint);
+	return std::make_shared<ListenServer>(shared_from_this(), endpoint);
 }
