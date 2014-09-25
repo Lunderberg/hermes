@@ -6,7 +6,7 @@ using boost::asio::ip::tcp;
 
 NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::resolver::iterator endpoint) :
-	m_io(io), m_socket(*m_io->GetService()){
+	m_io(io), m_socket(*m_io->GetService()), m_is_writing(false) {
 
 	m_read_body.reserve(max_message_size);
 
@@ -20,7 +20,7 @@ NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 
 NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::socket socket) :
-	m_io(io), m_socket(std::move(socket)){
+	m_io(io), m_socket(std::move(socket)), m_is_writing(false) {
 
 	m_io->GetService()->post(
 													 [this](){
@@ -29,9 +29,9 @@ NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 }
 
 NetworkSocket::~NetworkSocket(){
+	m_socket.close();
 	boost::system::error_code ec;
 	m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
-	m_socket.close();
 }
 
 void NetworkSocket::do_read_header(){
@@ -63,6 +63,10 @@ void NetworkSocket::do_read_body(){
 }
 
 void NetworkSocket::write(const Message& message){
+
+	boost::asio::socket_base::linger option(true,1000);
+	m_socket.set_option(option);
+
 	// Make header
 	network_header header;
 	std::string packed = message.Pack();
@@ -78,29 +82,71 @@ void NetworkSocket::write(const Message& message){
 	std::copy(packed.begin(), packed.end(), std::back_inserter(buffer));
 
 	// Start the writing
+	m_is_writing = true;
 	m_io->GetService()->post(
 													 [this,buffer](){
-														 bool write_in_progress = !m_write_messages.empty();
-														 m_write_messages.push_back(buffer);
-														 if(!write_in_progress){
+														 {
+															 std::lock_guard<std::recursive_mutex> lock(m_write_lock);
+															 m_write_messages.push_back(buffer);
+														 }
+														 if(!m_writer_running){
+															 m_writer_running = true;
 															 do_write();
 														 };
 													 });
 }
 
 void NetworkSocket::do_write(){
+	{
+		std::lock_guard<std::recursive_mutex> lock(m_write_lock);
+		m_current_write = m_write_messages.front();
+	}
+
 	// Write the buffer to the socket.
 	boost::asio::async_write(m_socket,
-													 boost::asio::buffer(m_write_messages.front().data(),
-																							 m_write_messages.front().size()),
+													 boost::asio::buffer(m_current_write),
 													 [this](boost::system::error_code ec, std::size_t length){
 														 if(!ec){
-															 m_write_messages.pop_front();
-															 if(!m_write_messages.empty()){
+															 bool continue_writing;
+															 {
+																 std::lock_guard<std::recursive_mutex> lock(m_write_lock);
+																 m_write_messages.pop_front();
+																 continue_writing = !m_write_messages.empty();
+															 }
+															 if(continue_writing){
 																 do_write();
+															 } else {
+																 m_is_writing = false;
+																 m_writer_running = false;
 															 }
 														 } else {
 															 m_socket.close();
 														 }
 													 });
+}
+
+bool NetworkSocket::HasNewMessage(){
+	std::lock_guard<std::recursive_mutex> lock(m_read_lock);
+
+	return m_read_messages.size();
+}
+
+bool NetworkSocket::SendInProgress(){
+	return m_is_writing;
+}
+
+int NetworkSocket::WriteMessagesQueued(){
+	return m_write_messages.size();
+}
+
+bool NetworkSocket::IsOpen(){
+	return m_socket.is_open();
+}
+
+std::shared_ptr<Message> NetworkSocket::GetMessage(){
+	std::lock_guard<std::recursive_mutex> lock(m_read_lock);
+
+	auto output = m_read_messages.front();
+	m_read_messages.pop_front();
+	return output;
 }

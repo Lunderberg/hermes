@@ -6,6 +6,7 @@ using std::endl;
 #include <chrono>
 
 #include "RawTextMessage.hh"
+#include "IntegerMessage.hh"
 #include "NetworkIO.hh"
 
 int main(){
@@ -13,16 +14,28 @@ int main(){
 	auto listener = network->listen(5555);
 
 	while(true){
+		// Wait for a connection to be made
 		while(!listener->HasNewConnection()){
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
-
 		auto connection = listener->GetConnection();
-		while(!connection->HasNewMessage()){
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+
+		// Until the connection is closed, read messages
+		while(connection->IsOpen()){
+			if(connection->HasNewMessage()){
+				// Handle each message according to its type
+				auto message = connection->GetMessage();
+				if(auto m = std::dynamic_pointer_cast<RawTextMessage>(message)){
+					cout << "String message: " << m->GetText() << endl;
+				} else if (auto m = std::dynamic_pointer_cast<IntegerMessage>(message)){
+					cout << "Integer message: " << m->GetValue() << endl;
+				} else {
+					cout << "Unknown message: " << message->Pack() << endl;
+				}
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 
-		auto message = connection->GetMessage();
-		cout << message->Pack() << endl;
+
 	}
 }

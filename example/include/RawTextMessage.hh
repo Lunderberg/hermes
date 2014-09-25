@@ -2,8 +2,6 @@
 #define _RAWTEXTMESSAGE_H_
 
 #include <string>
-#include <memory>
-#include <sstream>
 
 #include "Message.hh"
 
@@ -16,10 +14,12 @@ public:
 private:
 	std::string m_text;
 
+	// Necessary function, defining how the class is serialized.
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version){
 		ar & m_text;
 	}
+	// Magic macro, defines a few necessary boilerplate functions
 	MESSAGE_CLASS(RawTextMessage);
 };
 

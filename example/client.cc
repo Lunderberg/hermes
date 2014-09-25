@@ -6,14 +6,22 @@ using std::endl;
 #include <chrono>
 
 #include "RawTextMessage.hh"
+#include "IntegerMessage.hh"
 #include "NetworkIO.hh"
 
 int main(){
+	// Start a connection
 	auto network = NetworkIO::start();
 	auto connection = network->connect("localhost",5555);
 
+	// Send a RawTextMessage
 	RawTextMessage msg("Why hello there");
 	connection->write(msg);
 
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	// Send an IntegerMessage
+	IntegerMessage msg2(42);
+	connection->write(msg2);
+
+	// Wait for the queue to finish.
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }

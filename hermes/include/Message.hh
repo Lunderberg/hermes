@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <sstream>
 
 #include <boost/preprocessor/seq/for_each.hpp>
 
