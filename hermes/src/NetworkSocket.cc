@@ -4,7 +4,7 @@
 
 using boost::asio::ip::tcp;
 
-NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
+hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::resolver::iterator endpoint) :
 	m_io(io), m_socket(*m_io->GetService()), m_writer_running(false) {
 
@@ -18,7 +18,7 @@ NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 });
 }
 
-NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
+hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::socket socket) :
 	m_io(io), m_socket(std::move(socket)), m_writer_running(false) {
 
@@ -28,7 +28,7 @@ NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 													 });
 }
 
-NetworkSocket::~NetworkSocket(){
+hermes::NetworkSocket::~NetworkSocket(){
 	while(m_socket.is_open() &&
 				m_unacknowledged_messages!=0){
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -39,7 +39,7 @@ NetworkSocket::~NetworkSocket(){
 	m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
 }
 
-void NetworkSocket::do_read_header(){
+void hermes::NetworkSocket::do_read_header(){
 	boost::asio::async_read(m_socket,
 													boost::asio::buffer(m_read_header.arr,header_size),
 													[this](boost::system::error_code ec, std::size_t length){
@@ -57,7 +57,7 @@ void NetworkSocket::do_read_header(){
 													});
 }
 
-void NetworkSocket::do_read_body(){
+void hermes::NetworkSocket::do_read_body(){
 	m_read_body.resize(m_read_header.size);
 	boost::asio::async_read(m_socket,
 													boost::asio::buffer(m_read_body.data(),m_read_header.size),
@@ -77,7 +77,7 @@ void NetworkSocket::do_read_body(){
 													});
 }
 
-void NetworkSocket::write(const Message& message){
+void hermes::NetworkSocket::write(const Message& message){
 
 	boost::asio::socket_base::linger option(true,1000);
 	m_socket.set_option(option);
@@ -112,7 +112,7 @@ void NetworkSocket::write(const Message& message){
 													 });
 }
 
-void NetworkSocket::write_acknowledge(network_header header){
+void hermes::NetworkSocket::write_acknowledge(network_header header){
 	header.acknowledge = 1;
 	std::vector<char> buffer;
 	std::copy(header.arr, header.arr+header_size, std::back_inserter(buffer));
@@ -130,7 +130,7 @@ void NetworkSocket::write_acknowledge(network_header header){
 													 });
 }
 
-void NetworkSocket::do_write(){
+void hermes::NetworkSocket::do_write(){
 	{
 		std::lock_guard<std::recursive_mutex> lock(m_write_lock);
 		m_current_write = m_write_messages.front();
@@ -158,22 +158,22 @@ void NetworkSocket::do_write(){
 													 });
 }
 
-bool NetworkSocket::HasNewMessage(){
+bool hermes::NetworkSocket::HasNewMessage(){
 	std::lock_guard<std::recursive_mutex> lock(m_read_lock);
 
 	return m_read_messages.size();
 }
 
-int NetworkSocket::WriteMessagesQueued(){
+int hermes::NetworkSocket::WriteMessagesQueued(){
 	std::lock_guard<std::recursive_mutex> lock(m_write_lock);
 	return m_write_messages.size();
 }
 
-bool NetworkSocket::IsOpen(){
+bool hermes::NetworkSocket::IsOpen(){
 	return m_socket.is_open();
 }
 
-std::shared_ptr<Message> NetworkSocket::GetMessage(){
+std::shared_ptr<hermes::Message> hermes::NetworkSocket::GetMessage(){
 	std::lock_guard<std::recursive_mutex> lock(m_read_lock);
 
 	auto output = m_read_messages.front();

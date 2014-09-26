@@ -3,7 +3,7 @@
 
 #include "Message.hh"
 
-class IntegerMessage : public Message{
+class IntegerMessage : public hermes::Message{
 public:
 	IntegerMessage(){}
 	IntegerMessage(int value) : m_value(value) {}

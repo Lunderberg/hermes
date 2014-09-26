@@ -5,7 +5,7 @@
 
 #include "Message.hh"
 
-class RawTextMessage : public Message{
+class RawTextMessage : public hermes::Message{
 public:
 	RawTextMessage(){}
 	RawTextMessage(std::string text) : m_text(text) {}

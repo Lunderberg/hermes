@@ -11,7 +11,7 @@ using std::endl;
 
 int main(){
 	// Start a connection
-	auto network = NetworkIO::start();
+	auto network = hermes::NetworkIO::start();
 	auto connection = network->connect("localhost",5555);
 
 	// Send a RawTextMessage

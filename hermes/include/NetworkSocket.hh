@@ -12,44 +12,46 @@
 
 #include "Message.hh"
 
-class NetworkIO;
+namespace hermes{
+	class NetworkIO;
 
-class NetworkSocket{
-public:
-	NetworkSocket(std::shared_ptr<NetworkIO> io,
-								boost::asio::ip::tcp::resolver::iterator endpoint);
-	NetworkSocket(std::shared_ptr<NetworkIO> io,
-								boost::asio::ip::tcp::socket socket);
-	virtual ~NetworkSocket();
-	void write(const Message& message);
+	class NetworkSocket{
+	public:
+		NetworkSocket(std::shared_ptr<NetworkIO> io,
+									boost::asio::ip::tcp::resolver::iterator endpoint);
+		NetworkSocket(std::shared_ptr<NetworkIO> io,
+									boost::asio::ip::tcp::socket socket);
+		virtual ~NetworkSocket();
+		void write(const Message& message);
 
-	bool HasNewMessage();
-	bool IsOpen();
-	std::shared_ptr<Message> GetMessage();
-	bool SendInProgress();
-	int WriteMessagesQueued();
+		bool HasNewMessage();
+		bool IsOpen();
+		std::shared_ptr<Message> GetMessage();
+		bool SendInProgress();
+		int WriteMessagesQueued();
 
-protected:
-	void do_read_header();
-	void do_read_body();
-	void do_write();
-	void write_acknowledge(network_header header);
+	protected:
+		void do_read_header();
+		void do_read_body();
+		void do_write();
+		void write_acknowledge(network_header header);
 
-	std::shared_ptr<NetworkIO> m_io;
-	boost::asio::ip::tcp::socket m_socket;
+		std::shared_ptr<NetworkIO> m_io;
+		boost::asio::ip::tcp::socket m_socket;
 
-	network_header m_read_header;
-	std::vector<char> m_read_body;
-	std::deque<std::shared_ptr<Message> > m_read_messages;
-	std::recursive_mutex m_read_lock;
+		network_header m_read_header;
+		std::vector<char> m_read_body;
+		std::deque<std::shared_ptr<Message> > m_read_messages;
+		std::recursive_mutex m_read_lock;
 
-	std::deque<std::vector<char> > m_write_messages;
-	std::vector<char> m_current_write;
-	std::atomic_bool m_writer_running;
-	std::recursive_mutex m_write_lock;
+		std::deque<std::vector<char> > m_write_messages;
+		std::vector<char> m_current_write;
+		std::atomic_bool m_writer_running;
+		std::recursive_mutex m_write_lock;
 
-	std::atomic_int m_unacknowledged_messages;
-};
+		std::atomic_int m_unacknowledged_messages;
+	};
+}
 
 
 

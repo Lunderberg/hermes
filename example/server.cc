@@ -10,7 +10,7 @@ using std::endl;
 #include "NetworkIO.hh"
 
 int main(){
-	auto network = NetworkIO::start();
+	auto network = hermes::NetworkIO::start();
 	auto listener = network->listen(5555);
 
 	while(true){

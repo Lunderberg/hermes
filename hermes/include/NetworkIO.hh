@@ -17,22 +17,24 @@
 class NetworkSocket;
 class ListenServer;
 
-class NetworkIO : public std::enable_shared_from_this<NetworkIO> {
-public:
-	static std::shared_ptr<NetworkIO> start();
-	std::shared_ptr<NetworkSocket> connect(std::string server, int port);
-	std::shared_ptr<NetworkSocket> connect(std::string server, std::string port);
-	std::shared_ptr<ListenServer> listen(int port);
+namespace hermes{
+	class NetworkIO : public std::enable_shared_from_this<NetworkIO> {
+	public:
+		static std::shared_ptr<NetworkIO> start();
+		std::shared_ptr<NetworkSocket> connect(std::string server, int port);
+		std::shared_ptr<NetworkSocket> connect(std::string server, std::string port);
+		std::shared_ptr<ListenServer> listen(int port);
 
-	std::shared_ptr<boost::asio::io_service> GetService(){return m_io_service;}
-	~NetworkIO();
+		std::shared_ptr<boost::asio::io_service> GetService(){return m_io_service;}
+		~NetworkIO();
 
-private:
-	NetworkIO();
+	private:
+		NetworkIO();
 
-	std::thread m_thread;
-	std::shared_ptr<boost::asio::io_service> m_io_service;
-	boost::asio::io_service::work m_work;
-};
+		std::thread m_thread;
+		std::shared_ptr<boost::asio::io_service> m_io_service;
+		boost::asio::io_service::work m_work;
+	};
+}
 
 #endif /* _NETWORKIO_H_ */
