@@ -21,7 +21,4 @@ int main(){
 	// Send an IntegerMessage
 	IntegerMessage msg2(42);
 	connection->write(msg2);
-
-	// Wait for the queue to finish.
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }

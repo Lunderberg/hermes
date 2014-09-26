@@ -33,6 +33,7 @@ protected:
 	void do_read_header();
 	void do_read_body();
 	void do_write();
+	void write_acknowledge(network_header header);
 
 	std::shared_ptr<NetworkIO> m_io;
 	boost::asio::ip::tcp::socket m_socket;
@@ -44,9 +45,10 @@ protected:
 
 	std::deque<std::vector<char> > m_write_messages;
 	std::vector<char> m_current_write;
-	std::atomic_bool m_is_writing;
 	std::atomic_bool m_writer_running;
 	std::recursive_mutex m_write_lock;
+
+	std::atomic_int m_unacknowledged_messages;
 };
 
 

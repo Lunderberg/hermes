@@ -6,7 +6,7 @@ using boost::asio::ip::tcp;
 
 NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::resolver::iterator endpoint) :
-	m_io(io), m_socket(*m_io->GetService()), m_is_writing(false) {
+	m_io(io), m_socket(*m_io->GetService()), m_writer_running(false) {
 
 	m_read_body.reserve(max_message_size);
 
@@ -20,7 +20,7 @@ NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 
 NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 														 boost::asio::ip::tcp::socket socket) :
-	m_io(io), m_socket(std::move(socket)), m_is_writing(false) {
+	m_io(io), m_socket(std::move(socket)), m_writer_running(false) {
 
 	m_io->GetService()->post(
 													 [this](){
@@ -29,6 +29,11 @@ NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 }
 
 NetworkSocket::~NetworkSocket(){
+	while(m_socket.is_open() &&
+				m_unacknowledged_messages!=0){
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+
 	m_socket.close();
 	boost::system::error_code ec;
 	m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
@@ -39,7 +44,13 @@ void NetworkSocket::do_read_header(){
 													boost::asio::buffer(m_read_header.arr,header_size),
 													[this](boost::system::error_code ec, std::size_t length){
 														if(!ec){
-															do_read_body();
+															if(m_read_header.acknowledge==0){
+																do_read_body();
+															} else {
+																m_unacknowledged_messages--;
+																do_read_header();
+															}
+
 														} else {
 															m_socket.close();
 														}
@@ -54,7 +65,11 @@ void NetworkSocket::do_read_body(){
 														if(!ec){
 															auto new_message = Message::Unpack(m_read_header.id,
 																																 {m_read_body.begin(), m_read_body.end()} );
-															m_read_messages.push_back(std::move(new_message));
+															{
+																std::lock_guard<std::recursive_mutex> lock(m_read_lock);
+																m_read_messages.push_back(std::move(new_message));
+															}
+															write_acknowledge(m_read_header);
 															do_read_header();
 														} else {
 															m_socket.close();
@@ -72,6 +87,7 @@ void NetworkSocket::write(const Message& message){
 	std::string packed = message.Pack();
 	header.size = packed.size();
 	header.id = message.GetID();
+	header.acknowledge = 0;
 	if(header.size > max_message_size){
 		throw std::runtime_error("Message size exceeds maximum");
 	}
@@ -82,7 +98,7 @@ void NetworkSocket::write(const Message& message){
 	std::copy(packed.begin(), packed.end(), std::back_inserter(buffer));
 
 	// Start the writing
-	m_is_writing = true;
+	m_unacknowledged_messages++;
 	m_io->GetService()->post(
 													 [this,buffer](){
 														 {
@@ -92,7 +108,25 @@ void NetworkSocket::write(const Message& message){
 														 if(!m_writer_running){
 															 m_writer_running = true;
 															 do_write();
-														 };
+														 }
+													 });
+}
+
+void NetworkSocket::write_acknowledge(network_header header){
+	header.acknowledge = 1;
+	std::vector<char> buffer;
+	std::copy(header.arr, header.arr+header_size, std::back_inserter(buffer));
+
+	m_io->GetService()->post(
+													 [this,buffer](){
+														 {
+															 std::lock_guard<std::recursive_mutex> lock(m_write_lock);
+															 m_write_messages.push_back(buffer);
+														 }
+														 if(!m_writer_running){
+															 m_writer_running = true;
+															 do_write();
+														 }
 													 });
 }
 
@@ -116,7 +150,6 @@ void NetworkSocket::do_write(){
 															 if(continue_writing){
 																 do_write();
 															 } else {
-																 m_is_writing = false;
 																 m_writer_running = false;
 															 }
 														 } else {
@@ -131,11 +164,8 @@ bool NetworkSocket::HasNewMessage(){
 	return m_read_messages.size();
 }
 
-bool NetworkSocket::SendInProgress(){
-	return m_is_writing;
-}
-
 int NetworkSocket::WriteMessagesQueued(){
+	std::lock_guard<std::recursive_mutex> lock(m_write_lock);
 	return m_write_messages.size();
 }
 

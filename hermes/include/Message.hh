@@ -22,11 +22,12 @@ typedef std::int16_t id_type;
 typedef std::uint16_t size_type;
 constexpr size_type max_message_size = UINT16_MAX;
 
-constexpr size_t header_size = sizeof(id_type) + sizeof(size_type);
+constexpr size_t header_size = sizeof(id_type) + sizeof(size_type) + sizeof(char);
 union network_header{
 	struct{
 		id_type id;
 		size_type size;
+		char acknowledge;
 	};
 	char arr[header_size];
 };
