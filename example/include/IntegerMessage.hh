@@ -18,7 +18,7 @@ private:
 		ar & m_value;
 	}
 	// Magic macro, defines a few necessary boilerplate functions
-	MESSAGE_CLASS(IntegerMessage);
+	HERMES_MESSAGE_CLASS(IntegerMessage);
 };
 
 #endif /* _INTEGERMESSAGE_H_ */

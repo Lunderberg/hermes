@@ -3,4 +3,4 @@
 #include "RawTextMessage.hh"
 #include "IntegerMessage.hh"
 
-NETWORK_UNPACK( (RawTextMessage)(IntegerMessage) )
+HERMES_MESSAGE_TYPES(RawTextMessage,IntegerMessage);

@@ -20,7 +20,7 @@ private:
 		ar & m_text;
 	}
 	// Magic macro, defines a few necessary boilerplate functions
-	MESSAGE_CLASS(RawTextMessage);
+	HERMES_MESSAGE_CLASS(RawTextMessage);
 };
 
 #endif /* _RAWTEXTMESSAGE_H_ */
