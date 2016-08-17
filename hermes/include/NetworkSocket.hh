@@ -11,46 +11,63 @@
 #include <boost/asio.hpp>
 
 #include "Message.hh"
+#include "MessageTemplates.hh"
 
-namespace hermes{
-	class NetworkIO;
+namespace hermes {
+  class NetworkIO;
+  class MessageTemplates;
 
-	class NetworkSocket{
-	public:
-		NetworkSocket(std::shared_ptr<NetworkIO> io,
-									boost::asio::ip::tcp::resolver::iterator endpoint);
-		NetworkSocket(std::shared_ptr<NetworkIO> io,
-									boost::asio::ip::tcp::socket socket);
-		virtual ~NetworkSocket();
-		void write(const Message& message);
+  class NetworkSocket {
+  public:
+    NetworkSocket(std::shared_ptr<NetworkIO> io,
+                  boost::asio::ip::tcp::resolver::iterator endpoint,
+                  std::shared_ptr<MessageTemplates> templates);
 
-		bool HasNewMessage();
-		bool IsOpen();
-		std::shared_ptr<Message> GetMessage();
-		bool SendInProgress();
-		int WriteMessagesQueued();
+    NetworkSocket(std::shared_ptr<NetworkIO> io,
+                  boost::asio::ip::tcp::socket socket,
+                  std::shared_ptr<MessageTemplates> templates);
 
-	protected:
-		void do_read_header();
-		void do_read_body();
-		void do_write();
-		void write_acknowledge(network_header header);
+    virtual ~NetworkSocket();
 
-		std::shared_ptr<NetworkIO> m_io;
-		boost::asio::ip::tcp::socket m_socket;
+    std::unique_ptr<Message> GetMessage();
 
-		network_header m_read_header;
-		std::vector<char> m_read_body;
-		std::deque<std::shared_ptr<Message> > m_read_messages;
-		std::recursive_mutex m_read_lock;
+    template<typename T>
+    void write(const T& message) {
+      auto msg_obj = m_message_templates->create_by_class<T>();
+      msg_obj->unpacked() = message;
+      write_direct(*msg_obj);
+    }
 
-		std::deque<std::vector<char> > m_write_messages;
-		std::vector<char> m_current_write;
-		std::atomic_bool m_writer_running;
-		std::recursive_mutex m_write_lock;
+    bool HasNewMessage();
+    bool IsOpen();
+    bool SendInProgress();
+    int WriteMessagesQueued();
 
-		std::atomic_int m_unacknowledged_messages;
-	};
+  protected:
+    void write_direct(const Message& message);
+
+    void do_read_header();
+    void do_read_body();
+    void do_write();
+    void write_acknowledge(network_header header);
+
+    std::shared_ptr<NetworkIO> m_io;
+    boost::asio::ip::tcp::socket m_socket;
+    std::shared_ptr<MessageTemplates> m_message_templates;
+
+    std::unique_ptr<Message> m_current_message;
+
+    network_header m_read_header;
+    std::deque<std::unique_ptr<Message> > m_read_messages;
+    std::recursive_mutex m_read_lock;
+
+    std::deque<std::vector<char> > m_write_messages;
+    std::vector<char> m_current_write;
+    std::atomic_bool m_writer_running;
+    std::recursive_mutex m_write_lock;
+
+    std::atomic_int m_unacknowledged_messages;
+  };
 }
 
 

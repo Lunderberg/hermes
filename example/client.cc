@@ -1,24 +1,35 @@
-#include <iostream>
-using std::cout;
-using std::endl;
-
-#include <thread>
 #include <chrono>
+#include <cstring>
+#include <iostream>
+#include <thread>
 
-#include "RawTextMessage.hh"
 #include "IntegerMessage.hh"
+#include "Message.hh"
 #include "NetworkIO.hh"
+#include "RawTextMessage.hh"
 
 int main(){
-	// Start a connection
-	auto network = hermes::NetworkIO::start();
-	auto connection = network->connect("localhost",5555);
+  // Start a connection
+  auto network = hermes::NetworkIO::start();
+  network->message_type<IntegerMessage>(1);
+  network->message_type<RawTextMessage>(2);
 
-	// Send a RawTextMessage
-	RawTextMessage msg("Why hello there");
-	connection->write(msg);
+  auto connection = network->connect("localhost",5555);
 
-	// Send an IntegerMessage
-	IntegerMessage msg2(42);
-	connection->write(msg2);
+
+  {
+    // Send an IntegerMessage
+    IntegerMessage msg;
+    msg.value = 42;
+    connection->write(msg);
+
+  }
+
+  {
+    // Send a RawTextMessage
+    RawTextMessage msg;
+    strncpy(msg.buf, "Why hello there", 80);
+    connection->write(msg);
+  }
+
 }
