@@ -7,7 +7,7 @@
 #include "NetworkSocket.hh"
 #include "ListenServer.hh"
 
-using boost::asio::ip::tcp;
+using asio::ip::tcp;
 
 std::shared_ptr<hermes::NetworkIO> hermes::NetworkIO::start() {
   //Can't use std::make_shared because the contstructor is private
@@ -15,7 +15,7 @@ std::shared_ptr<hermes::NetworkIO> hermes::NetworkIO::start() {
 }
 
 hermes::NetworkIO::NetworkIO()
-  : m_io_service(new boost::asio::io_service), m_work(*m_io_service), m_thread(),
+  : m_thread(), m_io_service(new asio::io_service), m_work(*m_io_service),
     m_message_templates(std::make_shared<MessageTemplates>()) {
   m_thread = std::thread([this]() {
     while (true) {

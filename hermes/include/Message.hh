@@ -6,36 +6,24 @@
 #include <memory>
 #include <sstream>
 
-#include <boost/preprocessor/variadic/to_seq.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-// #include <boost/archive/binary_oarchive.hpp>
-// #include <boost/archive/binary_iarchive.hpp>
-
 #include "MakeUnique.hh"
 
 namespace hermes {
-
-  typedef boost::archive::text_oarchive oarchive;
-  typedef boost::archive::text_iarchive iarchive;
-// typedef boost::archive::binary_oarchive oarchive;
-// typedef boost::archive::binary_iarchive iarchive;
-
-  typedef std::int16_t id_type;
+  typedef std::uint16_t id_type;
   typedef std::uint16_t size_type;
   constexpr size_type max_message_size = UINT16_MAX;
 
-  constexpr size_t header_size = sizeof(id_type) + sizeof(size_type) + sizeof(char);
   union network_header {
-    struct {
+    struct packed_t {
       id_type id;
       size_type size;
       char acknowledge;
     };
-    char arr[header_size];
+
+    packed_t packed;
+    char arr[sizeof(packed)];
   };
+  constexpr size_t header_size = sizeof(network_header);
 
   template<typename T>
   class MessageType;

@@ -2,18 +2,18 @@
 
 #include "NetworkIO.hh"
 
-using boost::asio::ip::tcp;
+using asio::ip::tcp;
 
 hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
-                                     boost::asio::ip::tcp::resolver::iterator endpoint,
+                                     asio::ip::tcp::resolver::iterator endpoint,
                                      std::shared_ptr<MessageTemplates> templates) :
   m_io(io), m_socket(*m_io->GetService()), m_message_templates(templates),
   m_writer_running(false) {
 
-  boost::asio::async_connect(m_socket, endpoint,
-  [this](boost::system::error_code ec, tcp::resolver::iterator) {
+  asio::async_connect(m_socket, endpoint,
+  [this](asio::error_code ec, tcp::resolver::iterator) {
     if (!ec) {
-      boost::asio::socket_base::linger option(true,1000);
+      asio::socket_base::linger option(true,1000);
       m_socket.set_option(option);
       do_read_header();
     }
@@ -21,14 +21,14 @@ hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
 }
 
 hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
-                                     boost::asio::ip::tcp::socket socket,
+                                     asio::ip::tcp::socket socket,
                                      std::shared_ptr<MessageTemplates> templates) :
   m_io(io), m_socket(std::move(socket)), m_message_templates(templates),
   m_writer_running(false) {
 
   m_io->GetService()->post(
   [this]() {
-    boost::asio::socket_base::linger option(true,1000);
+    asio::socket_base::linger option(true,1000);
     m_socket.set_option(option);
     do_read_header();
   });
@@ -41,46 +41,46 @@ hermes::NetworkSocket::~NetworkSocket() {
   }
 
   m_socket.close();
-  boost::system::error_code ec;
-  m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
+  asio::error_code ec;
+  m_socket.shutdown(asio::ip::tcp::socket::shutdown_both,ec);
 }
 
 void hermes::NetworkSocket::do_read_header() {
-  boost::asio::async_read(m_socket,
-                          boost::asio::buffer(m_read_header.arr,header_size),
-  [this](boost::system::error_code ec, std::size_t length) {
-    if (!ec) {
-      if (m_read_header.acknowledge==0) {
-        do_read_body();
-      } else {
-        m_unacknowledged_messages--;
-        do_read_header();
-      }
+  asio::async_read(m_socket,
+                   asio::buffer(m_read_header.arr,header_size),
+                   [this](asio::error_code ec, std::size_t /*length*/) {
+                     if (!ec) {
+                       if (m_read_header.packed.acknowledge==0) {
+                         do_read_body();
+                       } else {
+                         m_unacknowledged_messages--;
+                         do_read_header();
+                       }
 
-    } else {
-      m_socket.close();
-    }
-  });
+                     } else {
+                       m_socket.close();
+                     }
+                   });
 }
 
 void hermes::NetworkSocket::do_read_body() {
-  m_current_message = m_message_templates->create_by_id(m_read_header.id);
+  m_current_message = m_message_templates->create_by_id(m_read_header.packed.id);
 
-  boost::asio::async_read(m_socket,
-                          //boost::asio::buffer(m_current_message->raw(),m_read_header.size()),
-                          boost::asio::buffer(m_current_message->raw(),m_current_message->size()),
-  [this](boost::system::error_code ec, std::size_t length) {
-    if (!ec) {
-      {
-        std::lock_guard<std::recursive_mutex> lock(m_read_lock);
-        m_read_messages.push_back(std::move(m_current_message));
-      }
-      write_acknowledge(m_read_header);
-      do_read_header();
-    } else {
-      m_socket.close();
-    }
-  });
+  asio::async_read(m_socket,
+                          //asio::buffer(m_current_message->raw(),m_read_header.size()),
+                   asio::buffer(m_current_message->raw(),m_current_message->size()),
+                   [this](asio::error_code ec, std::size_t /*length*/) {
+                     if (!ec) {
+                       {
+                         std::lock_guard<std::recursive_mutex> lock(m_read_lock);
+                         m_read_messages.push_back(std::move(m_current_message));
+                       }
+                       write_acknowledge(m_read_header);
+                       do_read_header();
+                     } else {
+                       m_socket.close();
+                     }
+                   });
 }
 
 void hermes::NetworkSocket::write_direct(const Message& message) {
@@ -89,10 +89,10 @@ void hermes::NetworkSocket::write_direct(const Message& message) {
 
   // Make header
   network_header header;
-  header.size = message.size();
-  header.id = message.id();
-  header.acknowledge = 0;
-  if (header.size > max_message_size) {
+  header.packed.size = message.size();
+  header.packed.id = message.id();
+  header.packed.acknowledge = 0;
+  if (message.size() > max_message_size) {
     throw std::runtime_error("Message size exceeds maximum");
   }
 
@@ -117,7 +117,7 @@ void hermes::NetworkSocket::write_direct(const Message& message) {
 }
 
 void hermes::NetworkSocket::write_acknowledge(network_header header) {
-  header.acknowledge = 1;
+  header.packed.acknowledge = 1;
   std::vector<char> buffer;
   std::copy(header.arr, header.arr+header_size, std::back_inserter(buffer));
 
@@ -141,25 +141,25 @@ void hermes::NetworkSocket::do_write() {
   }
 
   // Write the buffer to the socket.
-  boost::asio::async_write(m_socket,
-                           boost::asio::buffer(m_current_write),
-  [this](boost::system::error_code ec, std::size_t length) {
-    if (!ec) {
-      bool continue_writing;
-      {
-        std::lock_guard<std::recursive_mutex> lock(m_write_lock);
-        m_write_messages.pop_front();
-        continue_writing = !m_write_messages.empty();
-      }
-      if (continue_writing) {
-        do_write();
-      } else {
-        m_writer_running = false;
-      }
-    } else {
-      m_socket.close();
-    }
-  });
+  asio::async_write(m_socket,
+                    asio::buffer(m_current_write),
+                    [this](asio::error_code ec, std::size_t /*length*/) {
+                      if (!ec) {
+                        bool continue_writing;
+                        {
+                          std::lock_guard<std::recursive_mutex> lock(m_write_lock);
+                          m_write_messages.pop_front();
+                          continue_writing = !m_write_messages.empty();
+                        }
+                        if (continue_writing) {
+                          do_write();
+                        } else {
+                          m_writer_running = false;
+                        }
+                      } else {
+                        m_socket.close();
+                      }
+                    });
 }
 
 bool hermes::NetworkSocket::HasNewMessage() {

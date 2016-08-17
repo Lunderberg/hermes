@@ -8,7 +8,7 @@
 #include <atomic>
 #include <mutex>
 
-#include <boost/asio.hpp>
+#include "asio.hpp"
 
 #include "Message.hh"
 #include "MessageTemplates.hh"
@@ -20,11 +20,11 @@ namespace hermes {
   class NetworkSocket {
   public:
     NetworkSocket(std::shared_ptr<NetworkIO> io,
-                  boost::asio::ip::tcp::resolver::iterator endpoint,
+                  asio::ip::tcp::resolver::iterator endpoint,
                   std::shared_ptr<MessageTemplates> templates);
 
     NetworkSocket(std::shared_ptr<NetworkIO> io,
-                  boost::asio::ip::tcp::socket socket,
+                  asio::ip::tcp::socket socket,
                   std::shared_ptr<MessageTemplates> templates);
 
     virtual ~NetworkSocket();
@@ -52,7 +52,7 @@ namespace hermes {
     void write_acknowledge(network_header header);
 
     std::shared_ptr<NetworkIO> m_io;
-    boost::asio::ip::tcp::socket m_socket;
+    asio::ip::tcp::socket m_socket;
     std::shared_ptr<MessageTemplates> m_message_templates;
 
     std::unique_ptr<Message> m_current_message;

@@ -4,7 +4,7 @@
 #include <memory>
 #include <deque>
 
-#include <boost/asio.hpp>
+#include "asio.hpp"
 
 #include "NetworkIO.hh"
 #include "MessageTemplates.hh"
@@ -18,7 +18,7 @@ class NetworkSocket;
 class ListenServer {
 public:
   ListenServer(std::shared_ptr<NetworkIO> io,
-               boost::asio::ip::tcp::endpoint endpoint,
+               asio::ip::tcp::endpoint endpoint,
                std::shared_ptr<MessageTemplates> templates);
 
   bool HasNewConnection() {return m_connections.size();}
@@ -37,8 +37,8 @@ private:
   void do_accept();
 
   std::shared_ptr<NetworkIO> m_io;
-  boost::asio::ip::tcp::acceptor m_acceptor;
-  boost::asio::ip::tcp::socket m_socket;
+  asio::ip::tcp::acceptor m_acceptor;
+  asio::ip::tcp::socket m_socket;
   std::shared_ptr<MessageTemplates> m_message_templates;
   std::deque<std::unique_ptr<NetworkSocket> > m_connections;
 };

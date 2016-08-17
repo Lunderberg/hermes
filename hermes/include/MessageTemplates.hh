@@ -1,6 +1,8 @@
 #ifndef _MESSAGETEMPLATES_H_
 #define _MESSAGETEMPLATES_H_
 
+#include <map>
+
 #include "Message.hh"
 
 namespace hermes {

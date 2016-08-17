@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-#include <boost/asio.hpp>
+#include "asio.hpp"
 
 #include "Message.hh"
 #include "ListenServer.hh"
@@ -26,7 +26,7 @@ public:
   std::shared_ptr<NetworkSocket> connect(std::string server, std::string port);
   std::shared_ptr<ListenServer> listen(int port);
 
-  std::shared_ptr<boost::asio::io_service> GetService() {return m_io_service;}
+  std::shared_ptr<asio::io_service> GetService() {return m_io_service;}
 
   ~NetworkIO();
 
@@ -39,8 +39,8 @@ private:
   NetworkIO();
 
   std::thread m_thread;
-  std::shared_ptr<boost::asio::io_service> m_io_service;
-  boost::asio::io_service::work m_work;
+  std::shared_ptr<asio::io_service> m_io_service;
+  asio::io_service::work m_work;
 
   std::shared_ptr<MessageTemplates> m_message_templates;
 };
