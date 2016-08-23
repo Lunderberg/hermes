@@ -2,6 +2,7 @@
 #define _LISTENSERVER_H_
 
 #include <memory>
+#include <mutex>
 #include <deque>
 
 #include "asio.hpp"
@@ -20,18 +21,10 @@ public:
   ListenServer(std::shared_ptr<NetworkIO> io,
                asio::ip::tcp::endpoint endpoint,
                std::shared_ptr<MessageTemplates> templates);
+  ~ListenServer();
 
   bool HasNewConnection() {return m_connections.size();}
-
-  std::unique_ptr<NetworkSocket> GetConnection() {
-    if(HasNewConnection()) {
-      auto output = std::move(m_connections.front());
-      m_connections.pop_front();
-      return output;
-    } else {
-      return nullptr;
-    }
-  }
+  std::unique_ptr<NetworkSocket> GetConnection();
 
 private:
   void do_accept();
@@ -40,6 +33,8 @@ private:
   asio::ip::tcp::acceptor m_acceptor;
   asio::ip::tcp::socket m_socket;
   std::shared_ptr<MessageTemplates> m_message_templates;
+
+  std::mutex m_mutex;
   std::deque<std::unique_ptr<NetworkSocket> > m_connections;
 };
 }

@@ -10,13 +10,13 @@
 
 namespace hermes {
   typedef std::uint16_t id_type;
-  typedef std::uint16_t size_type;
-  constexpr size_type max_message_size = UINT16_MAX;
+  typedef std::uint32_t size_type;
+  constexpr size_type max_message_size = UINT32_MAX;
 
   union network_header {
     struct packed_t {
-      id_type id;
       size_type size;
+      id_type id;
       char acknowledge;
     };
 

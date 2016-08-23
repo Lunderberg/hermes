@@ -16,13 +16,11 @@ int main(){
 
   auto connection = network->connect("localhost",5555);
 
-
   {
     // Send an IntegerMessage
     IntegerMessage msg;
     msg.value = 42;
     connection->write(msg);
-
   }
 
   {

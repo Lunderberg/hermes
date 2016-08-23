@@ -14,36 +14,36 @@
 #include "ListenServer.hh"
 #include "NetworkSocket.hh"
 #include "MessageTemplates.hh"
-
-class NetworkSocket;
-class ListenServer;
+#include "NetworkSocket.hh"
 
 namespace hermes {
-class NetworkIO : public std::enable_shared_from_this<NetworkIO> {
-public:
-  static std::shared_ptr<NetworkIO> start();
-  std::shared_ptr<NetworkSocket> connect(std::string server, int port);
-  std::shared_ptr<NetworkSocket> connect(std::string server, std::string port);
-  std::shared_ptr<ListenServer> listen(int port);
+  class ListenServer;
 
-  std::shared_ptr<asio::io_service> GetService() {return m_io_service;}
+  class NetworkIO : public std::enable_shared_from_this<NetworkIO> {
+  public:
+    static std::shared_ptr<NetworkIO> start();
+    std::unique_ptr<NetworkSocket> connect(std::string server, int port);
+    std::unique_ptr<NetworkSocket> connect(std::string server, std::string port);
+    std::unique_ptr<ListenServer> listen(int port);
 
-  ~NetworkIO();
+    std::shared_ptr<asio::io_service> GetService() {return m_io_service;}
 
-  template<typename T>
-  void message_type(id_type id) {
-    m_message_templates->define<T>(id);
-  }
+    ~NetworkIO();
 
-private:
-  NetworkIO();
+    template<typename T>
+    void message_type(id_type id) {
+      m_message_templates->define<T>(id);
+    }
 
-  std::thread m_thread;
-  std::shared_ptr<asio::io_service> m_io_service;
-  asio::io_service::work m_work;
+  private:
+    NetworkIO();
 
-  std::shared_ptr<MessageTemplates> m_message_templates;
-};
+    std::thread m_thread;
+    std::shared_ptr<asio::io_service> m_io_service;
+    asio::io_service::work m_work;
+
+    std::shared_ptr<MessageTemplates> m_message_templates;
+  };
 }
 
 #endif /* _NETWORKIO_H_ */

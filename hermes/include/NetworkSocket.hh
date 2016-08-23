@@ -1,12 +1,13 @@
 #ifndef _NETWORKSOCKET_H_
 #define _NETWORKSOCKET_H_
 
-#include <deque>
-#include <vector>
-#include <memory>
-#include <stdexcept>
 #include <atomic>
+#include <condition_variable>
+#include <deque>
+#include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <vector>
 
 #include "asio.hpp"
 
@@ -44,6 +45,7 @@ namespace hermes {
     int WriteMessagesQueued();
 
   protected:
+    void start_read_loop();
     void write_direct(const Message& message);
 
     void do_read_header();
@@ -55,16 +57,20 @@ namespace hermes {
     asio::ip::tcp::socket m_socket;
     std::shared_ptr<MessageTemplates> m_message_templates;
 
+    std::mutex m_open_mutex;
+    std::condition_variable m_can_write;
+    std::atomic_bool m_read_loop_started;
+
     std::unique_ptr<Message> m_current_message;
 
     network_header m_read_header;
     std::deque<std::unique_ptr<Message> > m_read_messages;
-    std::recursive_mutex m_read_lock;
+    std::mutex m_read_lock;
 
     std::deque<std::vector<char> > m_write_messages;
     std::vector<char> m_current_write;
     std::atomic_bool m_writer_running;
-    std::recursive_mutex m_write_lock;
+    std::mutex m_write_lock;
 
     std::atomic_int m_unacknowledged_messages;
   };
