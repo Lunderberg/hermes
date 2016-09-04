@@ -18,9 +18,8 @@ class NetworkSocket;
 
 class ListenServer {
 public:
-  ListenServer(std::shared_ptr<NetworkIO> io,
-               asio::ip::tcp::endpoint endpoint,
-               std::shared_ptr<MessageTemplates> templates);
+  ListenServer(NetworkIO io,
+               asio::ip::tcp::endpoint endpoint);
   ~ListenServer();
 
   bool HasNewConnection() {return m_connections.size();}
@@ -29,7 +28,7 @@ public:
 private:
   void do_accept();
 
-  std::shared_ptr<NetworkIO> m_io;
+  NetworkIO m_io;
   asio::ip::tcp::acceptor m_acceptor;
   asio::ip::tcp::socket m_socket;
   std::shared_ptr<MessageTemplates> m_message_templates;

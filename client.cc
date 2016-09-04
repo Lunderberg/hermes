@@ -3,18 +3,19 @@
 #include <iostream>
 #include <thread>
 
+#include "NetworkIO.hh"
+
 #include "IntegerMessage.hh"
 #include "Message.hh"
-#include "NetworkIO.hh"
 #include "RawTextMessage.hh"
 
 int main(){
   // Start a connection
-  auto network = hermes::NetworkIO::start();
-  network->message_type<IntegerMessage>(1);
-  network->message_type<RawTextMessage>(2);
+  hermes::NetworkIO network;
+  network.message_type<IntegerMessage>(1);
+  network.message_type<RawTextMessage>(2);
 
-  auto connection = network->connect("localhost",5555);
+  auto connection = network.connect("localhost",5555);
 
   {
     // Send an IntegerMessage

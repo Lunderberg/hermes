@@ -13,20 +13,16 @@
 
 #include "Message.hh"
 #include "MessageTemplates.hh"
+#include "NetworkIO.hh"
 
 namespace hermes {
-  class NetworkIO;
-  class MessageTemplates;
-
   class NetworkSocket {
   public:
-    NetworkSocket(std::shared_ptr<NetworkIO> io,
-                  asio::ip::tcp::resolver::iterator endpoint,
-                  std::shared_ptr<MessageTemplates> templates);
+    NetworkSocket(NetworkIO io,
+                  asio::ip::tcp::resolver::iterator endpoint);
 
-    NetworkSocket(std::shared_ptr<NetworkIO> io,
-                  asio::ip::tcp::socket socket,
-                  std::shared_ptr<MessageTemplates> templates);
+    NetworkSocket(NetworkIO io,
+                  asio::ip::tcp::socket socket);
 
     virtual ~NetworkSocket();
 
@@ -34,7 +30,7 @@ namespace hermes {
 
     template<typename T>
     void write(const T& message) {
-      auto msg_obj = m_message_templates->create_by_class<T>();
+      auto msg_obj = m_io.internals->message_templates.create_by_class<T>();
       msg_obj->unpacked() = message;
       write_direct(*msg_obj);
     }
@@ -53,9 +49,8 @@ namespace hermes {
     void do_write();
     void write_acknowledge(network_header header);
 
-    std::shared_ptr<NetworkIO> m_io;
+    NetworkIO m_io;
     asio::ip::tcp::socket m_socket;
-    std::shared_ptr<MessageTemplates> m_message_templates;
 
     std::mutex m_open_mutex;
     std::condition_variable m_can_write;

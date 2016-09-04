@@ -3,11 +3,9 @@
 #include "NetworkSocket.hh"
 #include "MakeUnique.hh"
 
-hermes::ListenServer::ListenServer(std::shared_ptr<hermes::NetworkIO> io,
-                                   asio::ip::tcp::endpoint endpoint,
-                                   std::shared_ptr<MessageTemplates> templates)
-  : m_io(io), m_acceptor(*io->GetService(),endpoint), m_socket(*io->GetService()),
-    m_message_templates(templates) {
+hermes::ListenServer::ListenServer(hermes::NetworkIO io,
+                                   asio::ip::tcp::endpoint endpoint)
+  : m_io(io), m_acceptor(io.internals->io_service,endpoint), m_socket(io.internals->io_service) {
 
   do_accept();
 }
@@ -24,8 +22,7 @@ void hermes::ListenServer::do_accept() {
                             i++;
                             if (!ec) {
                               auto connection = make_unique<hermes::NetworkSocket>(m_io,
-                                                                                   std::move(m_socket),
-                                                                                   m_message_templates);
+                                                                                   std::move(m_socket));
                               std::lock_guard<std::mutex> lock(m_mutex);
                               m_connections.push_back(std::move(connection));
                             } else if (ec != asio::error::operation_aborted){

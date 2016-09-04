@@ -6,12 +6,11 @@
 
 using asio::ip::tcp;
 
-hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
-                                     asio::ip::tcp::resolver::iterator endpoint,
-                                     std::shared_ptr<MessageTemplates> templates) :
-  m_io(io), m_socket(*m_io->GetService()), m_message_templates(templates),
-  m_read_loop_started(false), m_current_message(nullptr),
-  m_writer_running(false) {
+hermes::NetworkSocket::NetworkSocket(NetworkIO io,
+                                     asio::ip::tcp::resolver::iterator endpoint)
+  : m_io(io), m_socket(m_io.internals->io_service),
+    m_read_loop_started(false), m_current_message(nullptr),
+    m_writer_running(false) {
 
   asio::async_connect(m_socket, endpoint,
   [this](asio::error_code ec, tcp::resolver::iterator) {
@@ -21,13 +20,12 @@ hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
   });
 }
 
-hermes::NetworkSocket::NetworkSocket(std::shared_ptr<NetworkIO> io,
-                                     asio::ip::tcp::socket socket,
-                                     std::shared_ptr<MessageTemplates> templates) :
-  m_io(io), m_socket(std::move(socket)), m_message_templates(templates),
-  m_writer_running(false) {
+hermes::NetworkSocket::NetworkSocket(NetworkIO io,
+                                     asio::ip::tcp::socket socket)
+  : m_io(io), m_socket(std::move(socket)),
+    m_writer_running(false) {
 
-  m_io->GetService()->post( [this]() { start_read_loop(); });
+  m_io.internals->io_service.post( [this]() { start_read_loop(); });
 }
 
 hermes::NetworkSocket::~NetworkSocket() {
@@ -70,7 +68,7 @@ void hermes::NetworkSocket::do_read_header() {
 }
 
 void hermes::NetworkSocket::do_read_body() {
-  m_current_message = m_message_templates->create_by_id(m_read_header.packed.id);
+  m_current_message = m_io.internals->message_templates.create_by_id(m_read_header.packed.id);
 
   asio::async_read(m_socket,
                           //asio::buffer(m_current_message->raw(),m_read_header.size()),
@@ -117,7 +115,7 @@ void hermes::NetworkSocket::write_direct(const Message& message) {
 
   // Start the writing
   m_unacknowledged_messages++;
-  m_io->GetService()->post([this]() {
+  m_io.internals->io_service.post([this]() {
       if (!m_writer_running) {
         m_writer_running = true;
         do_write();
@@ -130,17 +128,17 @@ void hermes::NetworkSocket::write_acknowledge(network_header header) {
   std::vector<char> buffer;
   std::copy(header.arr, header.arr+header_size, std::back_inserter(buffer));
 
-  m_io->GetService()->post(
-  [this,buffer]() {
-    {
-      std::lock_guard<std::mutex> lock(m_write_lock);
-      m_write_messages.push_back(buffer);
-    }
-    if (!m_writer_running) {
-      m_writer_running = true;
-      do_write();
-    }
-  });
+  m_io.internals->io_service.post(
+    [this,buffer]() {
+      {
+        std::lock_guard<std::mutex> lock(m_write_lock);
+        m_write_messages.push_back(buffer);
+      }
+      if (!m_writer_running) {
+        m_writer_running = true;
+        do_write();
+      }
+    });
 }
 
 void hermes::NetworkSocket::do_write() {

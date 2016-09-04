@@ -77,32 +77,33 @@ int main(int argc, char** argv) {
   bool send_first = (argc == 1);
   bool is_server = (argc == 1);
 
-  auto network = hermes::NetworkIO::start();
-  network->message_type<SizedMessage<1> >(1);
-  network->message_type<SizedMessage<2> >(2);
-  network->message_type<SizedMessage<4> >(3);
-  network->message_type<SizedMessage<8> >(4);
-  network->message_type<SizedMessage<16> >(5);
-  network->message_type<SizedMessage<32> >(6);
-  network->message_type<SizedMessage<64> >(7);
-  network->message_type<SizedMessage<128> >(8);
-  network->message_type<SizedMessage<256> >(9);
-  network->message_type<SizedMessage<512> >(10);
-  network->message_type<SizedMessage<1024> >(11);
-  network->message_type<SizedMessage<2048> >(12);
-  network->message_type<SizedMessage<4096> >(13);
-  network->message_type<SizedMessage<8192> >(14);
-  network->message_type<SizedMessage<16384> >(15);
-  network->message_type<SizedMessage<32768> >(16);
-  network->message_type<SizedMessage<65536> >(17);
-  network->message_type<SizedMessage<131072> >(18);
-  network->message_type<SizedMessage<262144> >(19);
-  network->message_type<SizedMessage<524288> >(20);
-  network->message_type<SizedMessage<1048576> >(21);
-  network->message_type<SizedMessage<2097152> >(22);
-  network->message_type<SizedMessage<4194304> >(23);
-  network->message_type<SizedMessage<8388608> >(24);
-  network->message_type<SizedMessage<16777216> >(25);
+
+  hermes::NetworkIO network;
+  network.message_type<SizedMessage<1> >(1);
+  network.message_type<SizedMessage<2> >(2);
+  network.message_type<SizedMessage<4> >(3);
+  network.message_type<SizedMessage<8> >(4);
+  network.message_type<SizedMessage<16> >(5);
+  network.message_type<SizedMessage<32> >(6);
+  network.message_type<SizedMessage<64> >(7);
+  network.message_type<SizedMessage<128> >(8);
+  network.message_type<SizedMessage<256> >(9);
+  network.message_type<SizedMessage<512> >(10);
+  network.message_type<SizedMessage<1024> >(11);
+  network.message_type<SizedMessage<2048> >(12);
+  network.message_type<SizedMessage<4096> >(13);
+  network.message_type<SizedMessage<8192> >(14);
+  network.message_type<SizedMessage<16384> >(15);
+  network.message_type<SizedMessage<32768> >(16);
+  network.message_type<SizedMessage<65536> >(17);
+  network.message_type<SizedMessage<131072> >(18);
+  network.message_type<SizedMessage<262144> >(19);
+  network.message_type<SizedMessage<524288> >(20);
+  network.message_type<SizedMessage<1048576> >(21);
+  network.message_type<SizedMessage<2097152> >(22);
+  network.message_type<SizedMessage<4194304> >(23);
+  network.message_type<SizedMessage<8388608> >(24);
+  network.message_type<SizedMessage<16777216> >(25);
 
   std::cout << "Stuff defined" << std::endl;
 
@@ -110,7 +111,7 @@ int main(int argc, char** argv) {
   std::unique_ptr<hermes::ListenServer> listener = nullptr;
   if(is_server) {
     std::cout << "opening acceptor" << std::endl;
-    listener = network->listen(12346);
+    listener = network.listen(12346);
     std::cout << "acceptor opened" << std::endl;
     start_client(argv[0]);
 
@@ -121,7 +122,7 @@ int main(int argc, char** argv) {
     std::cout << "connection accepted" << std::endl;
   } else {
     std::cout << "connecting to 12345" << std::endl;
-    conn = network->connect("localhost",12346);
+    conn = network.connect("localhost",12346);
     std::cout << "connection made" << std::endl;
   }
 
