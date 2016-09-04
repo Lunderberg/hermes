@@ -108,10 +108,9 @@ int main(int argc, char** argv) {
   std::cout << "Stuff defined" << std::endl;
 
   std::unique_ptr<hermes::NetworkSocket> conn = nullptr;
-  std::unique_ptr<hermes::ListenServer> listener = nullptr;
   if(is_server) {
     std::cout << "opening acceptor" << std::endl;
-    listener = network.listen(12346);
+    auto listener = network.listen(12346);
     std::cout << "acceptor opened" << std::endl;
     start_client(argv[0]);
 
