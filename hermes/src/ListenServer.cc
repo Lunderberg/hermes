@@ -28,11 +28,11 @@ void hermes::ListenServer::do_accept() {
                                                                                    m_message_templates);
                               std::lock_guard<std::mutex> lock(m_mutex);
                               m_connections.push_back(std::move(connection));
-                            } else {
+                            } else if (ec != asio::error::operation_aborted){
                               std::cout << "do_accept, #" << i << " ec: " << ec << "\t" << ec.message() << std::endl;
                             }
 
-                            if(ec != asio::error::connection_aborted) {
+                            if (ec != asio::error::operation_aborted){
                               do_accept();
                             }
                           });

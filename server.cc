@@ -6,6 +6,26 @@
 #include "IntegerMessage.hh"
 #include "NetworkIO.hh"
 
+void handle_message(hermes::Message& message) {
+  switch(message.id()) {
+    case 1: {
+      IntegerMessage m = message;
+      std::cout << "Integer message: " << m.value << std::endl;
+    }
+      break;
+
+    case 2: {
+      RawTextMessage m = message;
+      m.buf[79] = '\0';
+      std::cout << "Text: " << m.buf << std::endl;
+    }
+      break;
+
+    default:
+      std::cout << "Unknown message type: " << message.id() << std::endl;
+  }
+}
+
 int main(){
   auto network = hermes::NetworkIO::start();
   network->message_type<IntegerMessage>(1);
@@ -25,23 +45,7 @@ int main(){
       if(connection->HasNewMessage()){
         // Handle each message according to its type
         auto message = connection->GetMessage();
-        switch(message->id()) {
-          case 1: {
-            IntegerMessage m = *message;
-            std::cout << "Integer message: " << m.value << std::endl;
-          }
-            break;
-
-          case 2: {
-            RawTextMessage m = *message;
-            m.buf[79] = '\0';
-            std::cout << "Text: " << m.buf << std::endl;
-          }
-            break;
-
-          default:
-            std::cout << "Unknown message type: " << message->id() << std::endl;
-        }
+        handle_message(*message);
       } else {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
