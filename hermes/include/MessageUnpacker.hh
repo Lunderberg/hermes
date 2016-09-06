@@ -1,6 +1,7 @@
 #ifndef _MESSAGEUNPACKER_H_
 #define _MESSAGEUNPACKER_H_
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -53,7 +54,7 @@ namespace hermes {
       assert(packed.size() == sizeof(T));
 
       auto obj = make_unique<T>();
-      memcpy(&*obj, packed.data(), packed.size());
+      memcpy(&*obj, packed.data(), std::min(packed.size(),sizeof(T)));
       return make_unique<UnpackedMessageHolder<T> >(std::move(obj));
     }
 
