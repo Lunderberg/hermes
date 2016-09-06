@@ -79,31 +79,31 @@ int main(int argc, char** argv) {
 
 
   hermes::NetworkIO network;
-  network.message_type<SizedMessage<1> >(1);
-  network.message_type<SizedMessage<2> >(2);
-  network.message_type<SizedMessage<4> >(3);
-  network.message_type<SizedMessage<8> >(4);
-  network.message_type<SizedMessage<16> >(5);
-  network.message_type<SizedMessage<32> >(6);
-  network.message_type<SizedMessage<64> >(7);
-  network.message_type<SizedMessage<128> >(8);
-  network.message_type<SizedMessage<256> >(9);
-  network.message_type<SizedMessage<512> >(10);
-  network.message_type<SizedMessage<1024> >(11);
-  network.message_type<SizedMessage<2048> >(12);
-  network.message_type<SizedMessage<4096> >(13);
-  network.message_type<SizedMessage<8192> >(14);
-  network.message_type<SizedMessage<16384> >(15);
-  network.message_type<SizedMessage<32768> >(16);
-  network.message_type<SizedMessage<65536> >(17);
-  network.message_type<SizedMessage<131072> >(18);
-  network.message_type<SizedMessage<262144> >(19);
-  network.message_type<SizedMessage<524288> >(20);
-  network.message_type<SizedMessage<1048576> >(21);
-  network.message_type<SizedMessage<2097152> >(22);
-  network.message_type<SizedMessage<4194304> >(23);
-  network.message_type<SizedMessage<8388608> >(24);
-  network.message_type<SizedMessage<16777216> >(25);
+  network.message_type<SizedMessage<1> >();
+  network.message_type<SizedMessage<2> >();
+  network.message_type<SizedMessage<4> >();
+  network.message_type<SizedMessage<8> >();
+  network.message_type<SizedMessage<16> >();
+  network.message_type<SizedMessage<32> >();
+  network.message_type<SizedMessage<64> >();
+  network.message_type<SizedMessage<128> >();
+  network.message_type<SizedMessage<256> >();
+  network.message_type<SizedMessage<512> >();
+  network.message_type<SizedMessage<1024> >();
+  network.message_type<SizedMessage<2048> >();
+  network.message_type<SizedMessage<4096> >();
+  network.message_type<SizedMessage<8192> >();
+  network.message_type<SizedMessage<16384> >();
+  network.message_type<SizedMessage<32768> >();
+  network.message_type<SizedMessage<65536> >();
+  network.message_type<SizedMessage<131072> >();
+  network.message_type<SizedMessage<262144> >();
+  network.message_type<SizedMessage<524288> >();
+  network.message_type<SizedMessage<1048576> >();
+  network.message_type<SizedMessage<2097152> >();
+  network.message_type<SizedMessage<4194304> >();
+  network.message_type<SizedMessage<8388608> >();
+  network.message_type<SizedMessage<16777216> >();
 
   std::cout << "Stuff defined" << std::endl;
 

@@ -41,6 +41,16 @@ namespace hermes {
     /// Defines a message that can be passed through any sockets opened from here.
     /**
        Template on the message type that will be passed.
+       Uses an auto-incremented message id.
+     */
+    template<typename T>
+    void message_type() {
+      internals->message_templates.define<T>();
+    }
+
+    /// Defines a message that can be passed through any sockets opened from here.
+    /**
+       Template on the message type that will be passed.
        The id is the unique id of the type, in the message header.
      */
     template<typename T>
