@@ -6,23 +6,14 @@
 #include "IntegerMessage.hh"
 #include "NetworkIO.hh"
 
-void handle_message(hermes::Message& message) {
-  switch(message.id()) {
-    case 1: {
-      IntegerMessage m = message;
-      std::cout << "Integer message: " << m.value << std::endl;
-    }
-      break;
-
-    case 2: {
-      RawTextMessage m = message;
-      m.buf[79] = '\0';
-      std::cout << "Text: " << m.buf << std::endl;
-    }
-      break;
-
-    default:
-      std::cout << "Unknown message type: " << message.id() << std::endl;
+void handle_message(hermes::UnpackedMessage& message) {
+  if(auto m = message.view<IntegerMessage>()) {
+    std::cout << "Integer message: " << m->value << std::endl;
+  } else if (auto m = message.view<RawTextMessage>()) {
+    m->buf[79] = '\0';
+    std::cout << "Text: " << m->buf << std::endl;
+  } else {
+    std::cout << "Unknown message type" << std::endl;
   }
 }
 

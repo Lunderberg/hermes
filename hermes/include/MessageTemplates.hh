@@ -4,6 +4,7 @@
 #include <map>
 
 #include "Message.hh"
+#include "MessageUnpacker.hh"
 
 namespace hermes {
   class MessageTemplates {
@@ -21,30 +22,25 @@ namespace hermes {
 
     template<typename T>
     void define(id_type id) {
-      m_templates_by_id[id] = make_unique<MessageType<T> >(id);
+      m_templates_by_id[id] = make_unique<PlainOldDataUnpacker<T> >(id);
       auto voidp = VoidPTypeChecker<T>::get();
-      m_templates_by_class[voidp] = make_unique<MessageType<T> >(id);
+      m_templates_by_class[voidp] = make_unique<PlainOldDataUnpacker<T> >(id);
     }
 
-    std::unique_ptr<Message> create_by_id(id_type id) const {
+    const MessageUnpacker& get_by_id(id_type id) const {
       // TODO: Throw custom exception, rather than std::out_of_range if not defined
-      auto& message_template = m_templates_by_id.at(id);
-      return message_template->create();
+      return *m_templates_by_id.at(id);
     }
 
     template<typename T>
-    std::unique_ptr<MessageType<T> > create_by_class() const {
+    const MessageUnpacker& get_by_class() const {
       auto voidp = VoidPTypeChecker<T>::get();
-      auto& message_template = m_templates_by_class.at(voidp);
-      auto msg = message_template->create();
-      return std::unique_ptr<MessageType<T> >(
-        static_cast<MessageType<T>*>(msg.release())
-      );
+      return *m_templates_by_class.at(voidp);
     }
 
   private:
-    std::map<id_type, std::unique_ptr<Message> > m_templates_by_id;
-    std::map<void*, std::unique_ptr<Message> > m_templates_by_class;
+    std::map<id_type, std::unique_ptr<MessageUnpacker> > m_templates_by_id;
+    std::map<void*, std::unique_ptr<MessageUnpacker> > m_templates_by_class;
   };
 
   template<typename T>

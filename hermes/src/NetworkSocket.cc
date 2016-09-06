@@ -9,8 +9,7 @@ using asio::ip::tcp;
 hermes::NetworkSocket::NetworkSocket(NetworkIO io,
                                      asio::ip::tcp::resolver::iterator endpoint)
   : m_io(io), m_socket(m_io.internals->io_service),
-    m_read_loop_started(false), m_current_message(nullptr),
-    m_writer_running(false) {
+    m_read_loop_started(false), m_writer_running(false) {
 
   asio::async_connect(m_socket, endpoint,
   [this](asio::error_code ec, tcp::resolver::iterator) {
@@ -51,10 +50,10 @@ void hermes::NetworkSocket::start_read_loop() {
 
 void hermes::NetworkSocket::do_read_header() {
   asio::async_read(m_socket,
-                   asio::buffer(m_read_header.arr,header_size),
+                   asio::buffer(m_current_read.header.arr, header_size),
                    [this](asio::error_code ec, std::size_t /*length*/) {
                      if (!ec) {
-                       if (m_read_header.packed.acknowledge==0) {
+                       if (m_current_read.header.packed.acknowledge==0) {
                          do_read_body();
                        } else {
                          m_unacknowledged_messages--;
@@ -68,18 +67,15 @@ void hermes::NetworkSocket::do_read_header() {
 }
 
 void hermes::NetworkSocket::do_read_body() {
-  m_current_message = m_io.internals->message_templates.create_by_id(m_read_header.packed.id);
+  m_current_read.body = std::string(); // In case it is a moved-from value
+  m_current_read.body.resize(m_current_read.header.packed.size, '\0');
 
   asio::async_read(m_socket,
-                          //asio::buffer(m_current_message->raw(),m_read_header.size()),
-                   asio::buffer(m_current_message->raw(),m_current_message->size()),
+                   asio::buffer(&m_current_read.body[0], m_current_read.body.size()),
                    [this](asio::error_code ec, std::size_t /*length*/) {
                      if (!ec) {
-                       {
-                         std::lock_guard<std::mutex> lock(m_read_lock);
-                         m_read_messages.push_back(std::move(m_current_message));
-                       }
-                       write_acknowledge(m_read_header);
+                       write_acknowledge(m_current_read.header);
+                       unpack_message();
                        do_read_header();
                      } else {
                        m_socket.close();
@@ -87,82 +83,96 @@ void hermes::NetworkSocket::do_read_body() {
                    });
 }
 
-void hermes::NetworkSocket::write_direct(const Message& message) {
+void hermes::NetworkSocket::unpack_message() {
+  auto& unpacker = m_io.internals->message_templates.get_by_id(m_current_read.header.packed.id);
+  auto unpacked = unpacker.unpack(m_current_read.body);
+  m_current_read.body = std::string();
+
+  std::lock_guard<std::mutex> lock(m_read_lock);
+  m_read_messages.push_back(std::move(unpacked));
+}
+
+void hermes::NetworkSocket::write_direct(Message message) {
   {
     std::unique_lock<std::mutex> lock(m_open_mutex);
     m_can_write.wait_for(lock, std::chrono::seconds(1),
                          [this]() { return bool(m_read_loop_started); });
   }
 
-  // Make header
-  network_header header;
-  header.packed.size = message.size();
-  header.packed.id = message.id();
-  header.packed.acknowledge = 0;
-  if (message.size() > max_message_size) {
+  if (message.header.packed.size != message.body.size()) {
+    throw std::runtime_error("Incorrect message header");
+  }
+  if (message.header.packed.size > max_message_size) {
     throw std::runtime_error("Message size exceeds maximum");
   }
 
-  // Form full message from header and payload.
-  std::vector<char> buffer;
-  std::copy(header.arr, header.arr+header_size, std::back_inserter(buffer));
-  std::copy(message.raw(), message.raw() + message.size(), std::back_inserter(buffer));
-
   {
     std::lock_guard<std::mutex> lock(m_write_lock);
-    m_write_messages.push_back(buffer);
+    m_write_messages.push_back(std::move(message));
   }
 
   // Start the writing
   m_unacknowledged_messages++;
-  m_io.internals->io_service.post([this]() {
+  start_writer();
+}
+
+void hermes::NetworkSocket::start_writer() {
+  m_io.internals->io_service.post(
+    [this]() {
       if (!m_writer_running) {
         m_writer_running = true;
-        do_write();
+        do_write_header();
       }
     });
 }
 
 void hermes::NetworkSocket::write_acknowledge(network_header header) {
   header.packed.acknowledge = 1;
-  std::vector<char> buffer;
-  std::copy(header.arr, header.arr+header_size, std::back_inserter(buffer));
+  Message message;
+  message.header = header;
 
-  m_io.internals->io_service.post(
-    [this,buffer]() {
-      {
-        std::lock_guard<std::mutex> lock(m_write_lock);
-        m_write_messages.push_back(buffer);
-      }
-      if (!m_writer_running) {
-        m_writer_running = true;
-        do_write();
-      }
-    });
-}
-
-void hermes::NetworkSocket::do_write() {
   {
     std::lock_guard<std::mutex> lock(m_write_lock);
-    m_current_write = m_write_messages.front();
+    m_write_messages.push_back(message);
+  }
+
+  start_writer();
+}
+
+void hermes::NetworkSocket::do_write_header() {
+  {
+    std::lock_guard<std::mutex> lock(m_write_lock);
+    if(m_write_messages.size()) {
+      m_current_write = std::move(m_write_messages.front());
+      m_write_messages.pop_front();
+    } else {
+      m_writer_running = false;
+      return;
+    }
   }
 
   // Write the buffer to the socket.
   asio::async_write(m_socket,
-                    asio::buffer(m_current_write),
+                    asio::buffer(m_current_write.header.arr, header_size),
                     [this](asio::error_code ec, std::size_t /*length*/) {
                       if (!ec) {
-                        bool continue_writing;
-                        {
-                          std::lock_guard<std::mutex> lock(m_write_lock);
-                          m_write_messages.pop_front();
-                          continue_writing = !m_write_messages.empty();
-                        }
-                        if (continue_writing) {
-                          do_write();
+                        if(m_current_write.header.packed.acknowledge == 0) {
+                          do_write_body();
                         } else {
-                          m_writer_running = false;
+                          do_write_header();
                         }
+                      } else {
+                        m_socket.close();
+                      }
+                    });
+}
+
+void hermes::NetworkSocket::do_write_body() {
+  asio::async_write(m_socket,
+                    asio::buffer(m_current_write.body.c_str(), m_current_write.body.size()),
+                    [this](asio::error_code ec, std::size_t /*length*/) {
+                      if(!ec) {
+                        do_write_header();
                       } else {
                         m_socket.close();
                       }
@@ -184,7 +194,7 @@ bool hermes::NetworkSocket::IsOpen() {
   return m_socket.is_open();
 }
 
-std::unique_ptr<hermes::Message> hermes::NetworkSocket::GetMessage() {
+std::unique_ptr<hermes::UnpackedMessage> hermes::NetworkSocket::GetMessage() {
   std::lock_guard<std::mutex> lock(m_read_lock);
 
   auto output = std::move(m_read_messages.front());

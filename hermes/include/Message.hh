@@ -25,74 +25,71 @@ namespace hermes {
   };
   constexpr size_t header_size = sizeof(network_header);
 
-  template<typename T>
-  class MessageType;
-
-  class Message {
-  public:
-    virtual ~Message() { }
-
-    virtual std::size_t size() const = 0;
-    virtual std::uint16_t id() const = 0;
-    virtual char* raw() = 0;
-    virtual const char* raw() const = 0;
-    virtual std::unique_ptr<Message> create() const = 0;
-
-    template<typename T>
-    operator T() {
-      return static_cast<MessageType<T>*>(this)->unpacked();
-    }
+  struct Message {
+    network_header header;
+    std::string body;
   };
 
-  template<typename T>
-  union converter {
-    T t;
-    char packed[sizeof(T)];
-  };
-
-  template<typename T>
-  class MessageType : public Message {
-    static_assert(std::is_pod<T>::value, "Message types must be plain old data (pod) types");
-
-  public:
-    MessageType(std::uint16_t id)
-      : id_(id) { }
-
-    virtual std::size_t size() const {
-      return sizeof(T);
-    }
-
-    virtual std::uint16_t id() const {
-      return id_;
-    }
-
-    virtual char* raw() {
-      return convert.packed;
-    }
-
-    virtual const char* raw() const {
-      return convert.packed;
-    }
-
-    virtual std::unique_ptr<Message> create() const {
-      return make_unique<MessageType>(id_);
-    }
-
-    T& unpacked() {
-      return convert.t;
-    }
-
-  private:
-    converter<T> convert;
-    id_type id_;
-  };
+  // template<typename T>
+  // class MessageType;
 
   // class Message {
   // public:
-  //   virtual void Unpack(const std::string& raw) = 0;
-  //   virtual std::string Pack() const = 0;
-  //   virtual id_type GetID() const = 0;
-  //   static std::shared_ptr<Message> Unpack(id_type id, std::string data);
+  //   virtual ~Message() { }
+
+  //   virtual std::size_t size() const = 0;
+  //   virtual std::uint16_t id() const = 0;
+  //   virtual char* raw() = 0;
+  //   virtual const char* raw() const = 0;
+  //   virtual std::unique_ptr<Message> create() const = 0;
+
+  //   template<typename T>
+  //   operator T() {
+  //     return static_cast<MessageType<T>*>(this)->unpacked();
+  //   }
+  // };
+
+  // template<typename T>
+  // union converter {
+  //   T t;
+  //   char packed[sizeof(T)];
+  // };
+
+  // template<typename T>
+  // class MessageType : public Message {
+  //   static_assert(std::is_pod<T>::value, "Message types must be plain old data (pod) types");
+
+  // public:
+  //   MessageType(std::uint16_t id)
+  //     : id_(id) { }
+
+  //   virtual std::size_t size() const {
+  //     return sizeof(T);
+  //   }
+
+  //   virtual std::uint16_t id() const {
+  //     return id_;
+  //   }
+
+  //   virtual char* raw() {
+  //     return convert.packed;
+  //   }
+
+  //   virtual const char* raw() const {
+  //     return convert.packed;
+  //   }
+
+  //   virtual std::unique_ptr<Message> create() const {
+  //     return make_unique<MessageType>(id_);
+  //   }
+
+  //   T& unpacked() {
+  //     return convert.t;
+  //   }
+
+  // private:
+  //   converter<T> convert;
+  //   id_type id_;
   // };
 
 }

@@ -6,11 +6,8 @@
 #include <memory>
 #include <deque>
 
-#include <iostream>
-
 #include "asio.hpp"
 
-#include "Message.hh"
 #include "MessageTemplates.hh"
 
 namespace hermes {
