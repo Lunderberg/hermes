@@ -18,11 +18,22 @@ class NetworkSocket;
 
 class ListenServer {
 public:
+  /// Opens a port to listen on
+  /**
+     Shouldn't be called directly.
+     Instead, use NetworkIO::listen.
+   */
   ListenServer(NetworkIO io,
                asio::ip::tcp::endpoint endpoint);
   ~ListenServer();
 
+  /// Returns true if there is a new connection waiting.
   bool HasNewConnection() {return m_connections.size();}
+
+  /// Returns a new connection
+  /**
+     If no connection has been made, returns nullptr.
+   */
   std::unique_ptr<NetworkSocket> GetConnection();
 
 private:
