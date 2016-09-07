@@ -69,7 +69,7 @@ namespace hermes {
     void write(const T& obj) {
       auto& unpacker = m_io.internals->message_templates.get_by_class<T>();
       Message message;
-      message.body = unpacker.pack(obj);
+      message.body = unpacker.pack(&obj);
 
       message.header.packed.size = message.body.size();
       message.header.packed.id = unpacker.id();
