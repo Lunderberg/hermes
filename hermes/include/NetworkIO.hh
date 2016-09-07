@@ -66,13 +66,14 @@ namespace hermes {
          instead of needing to maintain it as a shared_ptr.
      */
     struct internals_t {
-      template<typename T>
-      internals_t(T&& t)
-        : work(io_service), thread(std::forward<T>(t)) { }
+      internals_t()
+        : work(io_service) { }
 
       ~internals_t() {
         io_service.stop();
-        thread.join();
+        if(thread.joinable()) {
+          thread.join();
+        }
       }
 
       asio::io_service io_service;

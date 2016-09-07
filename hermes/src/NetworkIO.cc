@@ -14,7 +14,8 @@ using asio::ip::tcp;
 hermes::NetworkIO::NetworkIO()
   : internals(nullptr) {
 
-  internals = std::make_shared<internals_t>(
+  internals = std::make_shared<internals_t>();
+  internals->thread = std::thread(
     [this]() {
       while (true) {
         try {
