@@ -26,19 +26,16 @@ int main(){
 
   while(true){
     // Wait for a connection to be made
-    while(!listener->HasNewConnection()){
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    auto connection = listener->GetConnection();
+    auto connection = listener->WaitForConnection();
 
     // Until the connection is closed, read messages
     while(connection->IsOpen() || connection->HasNewMessage()){
-      if(connection->HasNewMessage()){
-        // Handle each message according to its type
-        auto message = connection->GetMessage();
+      auto message = connection->WaitForMessage();
+
+      if(message) {
         handle_message(*message);
       } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        break;
       }
     }
   }

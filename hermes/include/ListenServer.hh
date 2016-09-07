@@ -1,6 +1,8 @@
 #ifndef _LISTENSERVER_H_
 #define _LISTENSERVER_H_
 
+#include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <deque>
@@ -30,13 +32,26 @@ public:
   /// Returns true if there is a new connection waiting.
   bool HasNewConnection() {return m_connections.size();}
 
-  /// Returns a new connection
+  /// Get a new connection, return immediately.
   /**
      If no connection has been made, returns nullptr.
    */
   std::unique_ptr<NetworkSocket> GetConnection();
 
+  /// Returns a new connection, waiting indefinitely for one.
+  std::unique_ptr<NetworkSocket> WaitForConnection();
+
+  /// Returns a new connection, waiting for the time specified.
+  std::unique_ptr<NetworkSocket> WaitForConnection(std::chrono::duration<double> duration);
+
 private:
+  /// Pops a network socket off of m_connections
+  /**
+     Returns the first element from m_connections.
+     Assumes that m_mutex has already been acquired by the caller.
+   */
+  std::unique_ptr<NetworkSocket> pop_if_available();
+
   void do_accept();
 
   NetworkIO m_io;
@@ -45,6 +60,7 @@ private:
   std::shared_ptr<MessageTemplates> m_message_templates;
 
   std::mutex m_mutex;
+  std::condition_variable m_has_new_connection;
   std::deque<std::unique_ptr<NetworkSocket> > m_connections;
 };
 }

@@ -43,6 +43,22 @@ namespace hermes {
      */
     std::unique_ptr<UnpackedMessage> GetMessage();
 
+    /// Returns a message received from the socket, waiting indefinitely
+    /**
+       Waits indefinitely for a message to be received.
+       If the socket closes, will return a nullptr.
+       Otherwise, will return a valid object.
+     */
+    std::unique_ptr<UnpackedMessage> WaitForMessage();
+
+    /// Returns a message received from the socket, waiting the specified time.
+    /**
+       Waits up to the time specified for a message to be received.
+       If the socket closes, or if timeout occurs, will return a nullptr.
+       Otherwise, will return a valid object.
+     */
+    std::unique_ptr<UnpackedMessage> WaitForMessage(std::chrono::duration<double> duration);
+
     /// Write a message to the socket
     /**
        Returns immediately, asynchronously sending the message.
@@ -111,6 +127,13 @@ namespace hermes {
      */
     void do_read_body();
 
+    /// Pops from m_read_messages, if something is available
+    /**
+       Assumes that the caller has already acquired the m_read_lock mutex.
+       If no message is present, returns nullptr.
+     */
+    std::unique_ptr<UnpackedMessage> pop_if_available();
+
     /// Unpacks a message, places in m_read_messages
     /**
        Uses the unpacker stored in m_io.internals->message_templates.
@@ -167,6 +190,8 @@ namespace hermes {
     std::deque<std::unique_ptr<UnpackedMessage> > m_read_messages;
     /// A lock around m_read_messages
     std::mutex m_read_lock;
+    /// Condition variable for waiting on m_read_messages to have something
+    std::condition_variable m_received_message;
 
     /// Messages being queued up to write
     std::deque<Message> m_write_messages;
@@ -185,6 +210,10 @@ namespace hermes {
          and decrement on receiving an acknowledge.
      */
     std::atomic_int m_unacknowledged_messages;
+    /// Unacknowledged mutex
+    std::mutex m_unacknowledged_mutex;
+    /// Called whenever the unacknowledged messages goes down to 0
+    std::condition_variable m_all_messages_acknowledged;
   };
 }
 

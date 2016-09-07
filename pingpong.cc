@@ -31,15 +31,7 @@ void write_msg(hermes::NetworkSocket& socket, const SizedMessage<N>& msg) {
 }
 
 void read_msg(hermes::NetworkSocket& socket) {
-  //std::cout << "waiting for message" << std::endl;
-  while(socket.IsOpen() || socket.HasNewMessage()) {
-    if(socket.HasNewMessage()) {
-      auto message = socket.GetMessage();
-      return;
-    } else {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-  }
+  auto message = socket.WaitForMessage();
 }
 
 template<int N>
@@ -114,10 +106,7 @@ int main(int argc, char** argv) {
     std::cout << "acceptor opened" << std::endl;
     start_client(argv[0]);
 
-    while(!listener->HasNewConnection()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    conn = listener->GetConnection();
+    conn = listener->WaitForConnection();
     std::cout << "connection accepted" << std::endl;
   } else {
     std::cout << "connecting to 12345" << std::endl;
@@ -125,9 +114,6 @@ int main(int argc, char** argv) {
     std::cout << "connection made" << std::endl;
   }
 
-
-
-  //std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   test_with<1>(*conn, send_first);
   test_with<2>(*conn, send_first);

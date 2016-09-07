@@ -28,10 +28,10 @@ hermes::NetworkSocket::NetworkSocket(NetworkIO io,
 }
 
 hermes::NetworkSocket::~NetworkSocket() {
-  while (m_socket.is_open() &&
-         m_unacknowledged_messages!=0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
+  std::unique_lock<std::mutex> lock(m_unacknowledged_mutex);
+  m_all_messages_acknowledged.wait_for(
+    lock, std::chrono::seconds(5),
+    [this](){ return !m_socket.is_open() || m_unacknowledged_messages == 0; });
 
   m_socket.close();
   asio::error_code ec;
@@ -57,11 +57,15 @@ void hermes::NetworkSocket::do_read_header() {
                          do_read_body();
                        } else {
                          m_unacknowledged_messages--;
+                         if(m_unacknowledged_messages == 0) {
+                           m_all_messages_acknowledged.notify_one();
+                         }
                          do_read_header();
                        }
 
                      } else {
                        m_socket.close();
+                       m_received_message.notify_all();
                      }
                    });
 }
@@ -79,6 +83,7 @@ void hermes::NetworkSocket::do_read_body() {
                        do_read_header();
                      } else {
                        m_socket.close();
+                       m_received_message.notify_all();
                      }
                    });
 }
@@ -90,6 +95,7 @@ void hermes::NetworkSocket::unpack_message() {
 
   std::lock_guard<std::mutex> lock(m_read_lock);
   m_read_messages.push_back(std::move(unpacked));
+  m_received_message.notify_one();
 }
 
 void hermes::NetworkSocket::write_direct(Message message) {
@@ -196,8 +202,29 @@ bool hermes::NetworkSocket::IsOpen() {
 
 std::unique_ptr<hermes::UnpackedMessage> hermes::NetworkSocket::GetMessage() {
   std::lock_guard<std::mutex> lock(m_read_lock);
+  return pop_if_available();
+}
 
-  auto output = std::move(m_read_messages.front());
-  m_read_messages.pop_front();
-  return output;
+std::unique_ptr<hermes::UnpackedMessage> hermes::NetworkSocket::WaitForMessage() {
+  std::unique_lock<std::mutex> lock(m_read_lock);
+  m_received_message.wait(lock, [this]() { return m_read_messages.size() || !IsOpen(); } );
+  return pop_if_available();
+}
+
+std::unique_ptr<hermes::UnpackedMessage>
+hermes::NetworkSocket::WaitForMessage(std::chrono::duration<double> duration) {
+  std::unique_lock<std::mutex> lock(m_read_lock);
+  m_received_message.wait_for(lock, duration,
+                              [this]() { return m_read_messages.size() || !IsOpen(); } );
+  return pop_if_available();
+}
+
+std::unique_ptr<hermes::UnpackedMessage> hermes::NetworkSocket::pop_if_available() {
+  if(m_read_messages.size()) {
+    auto output = std::move(m_read_messages.front());
+    m_read_messages.pop_front();
+    return output;
+  } else {
+    return nullptr;
+  }
 }
