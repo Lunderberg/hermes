@@ -2,6 +2,11 @@
 #define _RAWTEXTMESSAGE_H_
 
 struct RawTextMessage {
+  template<typename Archiver>
+  void serialize(Archiver& ar, unsigned int /*version*/) {
+    ar & buf;
+  }
+
   char buf[80];
 };
 

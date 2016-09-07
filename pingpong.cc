@@ -9,6 +9,11 @@
 
 template<int N>
 struct SizedMessage {
+template<typename Archiver>
+  void serialize(Archiver& ar, unsigned int /*version*/) {
+    ar & buf;
+  }
+
   char buf[N];
 
   void fill_rand() {

@@ -5,8 +5,11 @@
 #include <cassert>
 #include <map>
 
+#include "BoostBinaryUnpacker.hh"
+#include "BoostTextUnpacker.hh"
 #include "Message.hh"
 #include "MessageUnpacker.hh"
+#include "PlainOldDataUnpacker.hh"
 
 namespace hermes {
   class MessageTemplates {
