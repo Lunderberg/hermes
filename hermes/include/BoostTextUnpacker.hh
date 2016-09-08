@@ -1,12 +1,15 @@
 #ifndef _BOOSTTEXTUNPACKER_H_
 #define _BOOSTTEXTUNPACKER_H_
 
-#include "MessageUnpacker.hh"
 
 #ifdef HERMES_ENABLE_BOOST_SERIALIZE
 
+#include <sstream>
+
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+
+#include "MessageUnpacker.hh"
 
 namespace hermes {
   template<typename T>
@@ -40,10 +43,13 @@ namespace hermes {
 
 #else
 
+#include "TemplatedBool.hh"
+
 namespace hermes {
   template<typename T>
   class BoostTextUnpacker : public MessageUnpacker {
-    static_assert(false, "To enable use of boost::serialize, -DHERMES_ENABLE_BOOST_SERIALIZE");
+    static_assert(TemplatedBool<T>::False,
+                  "To enable use of boost::serialize, -DHERMES_ENABLE_BOOST_SERIALIZE");
   };
 }
 

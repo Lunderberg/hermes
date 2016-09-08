@@ -76,31 +76,31 @@ int main(int argc, char** argv) {
 
 
   hermes::NetworkIO network;
-  network.message_type<SizedMessage<1> >();
-  network.message_type<SizedMessage<2> >();
-  network.message_type<SizedMessage<4> >();
-  network.message_type<SizedMessage<8> >();
-  network.message_type<SizedMessage<16> >();
-  network.message_type<SizedMessage<32> >();
-  network.message_type<SizedMessage<64> >();
-  network.message_type<SizedMessage<128> >();
-  network.message_type<SizedMessage<256> >();
-  network.message_type<SizedMessage<512> >();
-  network.message_type<SizedMessage<1024> >();
-  network.message_type<SizedMessage<2048> >();
-  network.message_type<SizedMessage<4096> >();
-  network.message_type<SizedMessage<8192> >();
-  network.message_type<SizedMessage<16384> >();
-  network.message_type<SizedMessage<32768> >();
-  network.message_type<SizedMessage<65536> >();
-  network.message_type<SizedMessage<131072> >();
-  network.message_type<SizedMessage<262144> >();
-  network.message_type<SizedMessage<524288> >();
-  network.message_type<SizedMessage<1048576> >();
-  network.message_type<SizedMessage<2097152> >();
-  network.message_type<SizedMessage<4194304> >();
-  network.message_type<SizedMessage<8388608> >();
-  network.message_type<SizedMessage<16777216> >();
+  network.message_type<SizedMessage<1        >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<2        >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<4        >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<8        >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<16       >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<32       >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<64       >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<128      >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<256      >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<512      >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<1024     >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<2048     >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<4096     >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<8192     >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<16384    >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<32768    >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<65536    >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<131072   >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<262144   >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<524288   >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<1048576  >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<2097152  >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<4194304  >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<8388608  >, PackingMethod::PlainOldData >();
+  network.message_type<SizedMessage<16777216 >, PackingMethod::PlainOldData >();
 
   std::cout << "Stuff defined" << std::endl;
 

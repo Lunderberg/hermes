@@ -10,6 +10,7 @@
 #include "Message.hh"
 #include "MessageUnpacker.hh"
 #include "PlainOldDataUnpacker.hh"
+#include "PackingMethod.hh"
 
 namespace hermes {
   class MessageTemplates {
@@ -22,11 +23,14 @@ namespace hermes {
       }
     };
 
+    template<typename T, PackingMethod Method>
+    struct unpacker_gen;
+
   public:
     MessageTemplates()
       : highest_id(0) { }
 
-    template<typename T>
+    template<typename T, PackingMethod Method>
     void define() {
       id_type next_id = highest_id;
       while(m_templates_by_id.count(next_id)) {
@@ -36,14 +40,14 @@ namespace hermes {
         assert(next_id != highest_id);
       }
 
-      define<T>(next_id);
+      define<T,Method>(next_id);
     }
 
-    template<typename T>
+    template<typename T,PackingMethod Method>
     void define(id_type id) {
-      m_templates_by_id[id] = make_unique<PlainOldDataUnpacker<T> >(id);
       auto voidp = VoidPTypeChecker<T>::get();
-      m_templates_by_class[voidp] = make_unique<PlainOldDataUnpacker<T> >(id);
+      m_templates_by_class[voidp] = unpacker_gen<T,Method>::construct(id);
+      m_templates_by_id[id] = unpacker_gen<T,Method>::construct(id);
 
       highest_id = std::max(highest_id, id);
     }
@@ -60,6 +64,31 @@ namespace hermes {
     }
 
   private:
+
+    template<typename T>
+    struct unpacker_gen<T, PackingMethod::PlainOldData> {
+      static std::unique_ptr<MessageUnpacker> construct(id_type id) {
+        return make_unique<PlainOldDataUnpacker<T> >(id);
+      }
+    };
+
+    template<typename T>
+    struct unpacker_gen<T, PackingMethod::BoostBinaryArchive> {
+      static std::unique_ptr<MessageUnpacker> construct(id_type id) {
+        return make_unique<BoostBinaryUnpacker<T> >(id);
+      }
+    };
+
+    template<typename T>
+    struct unpacker_gen<T, PackingMethod::BoostTextArchive> {
+      static std::unique_ptr<MessageUnpacker> construct(id_type id) {
+        return make_unique<BoostTextUnpacker<T> >(id);
+      }
+    };
+
+
+
+
     std::map<id_type, std::unique_ptr<MessageUnpacker> > m_templates_by_id;
     std::map<void*, std::unique_ptr<MessageUnpacker> > m_templates_by_class;
     id_type highest_id;

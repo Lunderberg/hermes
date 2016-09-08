@@ -9,6 +9,7 @@
 #include "asio.hpp"
 
 #include "MessageTemplates.hh"
+#include "PackingMethod.hh"
 
 namespace hermes {
   class NetworkSocket;
@@ -43,9 +44,9 @@ namespace hermes {
        Template on the message type that will be passed.
        Uses an auto-incremented message id.
      */
-    template<typename T>
+    template<typename T, PackingMethod Method = PackingMethod::PlainOldData>
     void message_type() {
-      internals->message_templates.define<T>();
+      internals->message_templates.define<T,Method>();
     }
 
     /// Defines a message that can be passed through any sockets opened from here.
@@ -53,9 +54,9 @@ namespace hermes {
        Template on the message type that will be passed.
        The id is the unique id of the type, in the message header.
      */
-    template<typename T>
+    template<typename T, PackingMethod Method = PackingMethod::PlainOldData>
     void message_type(id_type id) {
-      internals->message_templates.define<T>(id);
+      internals->message_templates.define<T,Method>(id);
     }
 
   private:
