@@ -33,7 +33,9 @@ hermes::NetworkSocket::~NetworkSocket() {
     lock, std::chrono::seconds(5),
     [this](){ return !m_socket.is_open() || m_unacknowledged_messages == 0; });
 
-  m_socket.close();
+  if(m_socket.is_open()) {
+    m_socket.close();
+  }
   asio::error_code ec;
   m_socket.shutdown(asio::ip::tcp::socket::shutdown_both,ec);
 }
