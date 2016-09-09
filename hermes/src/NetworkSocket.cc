@@ -95,6 +95,14 @@ void hermes::NetworkSocket::unpack_message() {
   auto unpacked = unpacker.unpack(m_current_read.body);
   m_current_read.body = std::string();
 
+  std::lock_guard<std::mutex> lock_callbacks(m_callback_mutex);
+  for(auto& callback : m_callbacks) {
+    bool res = callback->apply_on(*unpacked);
+    if(res) {
+      return;
+    }
+  }
+
   std::lock_guard<std::mutex> lock(m_read_lock);
   m_read_messages.push_back(std::move(unpacked));
   m_received_message.notify_one();
@@ -229,4 +237,25 @@ std::unique_ptr<hermes::UnpackedMessage> hermes::NetworkSocket::pop_if_available
   } else {
     return nullptr;
   }
+}
+
+void hermes::NetworkSocket::initialize_callback() {
+  std::unique_ptr<MessageCallback> new_callback = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(m_new_callback_mutex);
+    new_callback = std::move(m_new_callbacks.front());
+    m_new_callbacks.pop_front();
+  }
+
+  std::lock_guard<std::mutex> lock_callbacks(m_callback_mutex);
+  std::lock_guard<std::mutex> lock_messages(m_read_lock);
+
+  // Try callback on all messages, remove any that return true.
+  m_read_messages.erase(std::remove_if(m_read_messages.begin(), m_read_messages.end(),
+                                       [&](std::unique_ptr<UnpackedMessage>& msg) {
+                                         return new_callback->apply_on(*msg);
+                                       }),
+                        m_read_messages.end());
+
+  m_callbacks.push_back(std::move(new_callback));
 }

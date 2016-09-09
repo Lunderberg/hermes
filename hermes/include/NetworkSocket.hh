@@ -4,6 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -12,6 +13,7 @@
 #include "asio.hpp"
 
 #include "Message.hh"
+#include "MessageCallback.hh"
 #include "MessageTemplates.hh"
 #include "NetworkIO.hh"
 #include "UnpackedMessage.hh"
@@ -76,6 +78,25 @@ namespace hermes {
       message.header.packed.acknowledge = 0;
 
       write_direct(std::move(message));
+    }
+
+    /// Adds a callback for a given message type.
+    template<typename T>
+    void add_callback(std::function<void(T&)> func) {
+      add_callback<T>([func](std::unique_ptr<T> obj) {
+          func(*obj);
+        });
+    }
+
+    /// Adds a callback for a given message type.
+    template<typename T>
+    void add_callback(std::function<void(std::unique_ptr<T>)> func) {
+      auto callback = make_unique<MessageCallbackType<T> >(func);
+      std::lock_guard<std::mutex> lock(m_new_callback_mutex);
+      m_new_callbacks.push_back(std::move(callback));
+      m_io.internals->io_service.post(
+        [this]() { initialize_callback(); }
+      );
     }
 
     /// Returns whether a message has been received
@@ -167,6 +188,14 @@ namespace hermes {
      */
     void do_write_body();
 
+    /// Initialize a single callback
+    /**
+       Messages may have arrived between the opening of the socket and the defined of a callback.
+       Therefore, a callback must be checked against all queued messages
+         before entering general use.
+     */
+    void initialize_callback();
+
     /// The NetworkIO running the socket.
     /**
        We use the unpackers defined here.
@@ -214,6 +243,15 @@ namespace hermes {
     std::mutex m_unacknowledged_mutex;
     /// Called whenever the unacknowledged messages goes down to 0
     std::condition_variable m_all_messages_acknowledged;
+
+    /// List of callbacks defined but not yet initialized
+    std::deque<std::unique_ptr<MessageCallback> > m_new_callbacks;
+    /// Mutex around new callbacks
+    std::mutex m_new_callback_mutex;
+    /// List of initialized callbacks
+    std::vector<std::unique_ptr<MessageCallback> > m_callbacks;
+    /// Mutex around initialized callbacks
+    std::mutex m_callback_mutex;
   };
 }
 

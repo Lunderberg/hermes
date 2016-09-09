@@ -6,17 +6,6 @@
 #include "IntegerMessage.hh"
 #include "NetworkIO.hh"
 
-void handle_message(hermes::UnpackedMessage& message) {
-  if(auto m = message.view<IntegerMessage>()) {
-    std::cout << "Integer message: " << m->value << std::endl;
-  } else if (auto m = message.view<RawTextMessage>()) {
-    m->buf[79] = '\0';
-    std::cout << "Text: " << m->buf << std::endl;
-  } else {
-    std::cout << "Unknown message type" << std::endl;
-  }
-}
-
 int main(){
   hermes::NetworkIO network;
   network.message_type<IntegerMessage>(1);
@@ -28,15 +17,19 @@ int main(){
     // Wait for a connection to be made
     auto connection = listener->WaitForConnection();
 
-    // Until the connection is closed, read messages
-    while(connection->IsOpen() || connection->HasNewMessage()){
-      auto message = connection->WaitForMessage();
 
-      if(message) {
-        handle_message(*message);
-      } else {
-        break;
-      }
+    connection->add_callback<IntegerMessage>([](IntegerMessage& msg) {
+        std::cout << "Integer message: " << msg.value << std::endl;
+      });
+
+    connection->add_callback<RawTextMessage>([](RawTextMessage& msg) {
+        msg.buf[79] = '\0';
+        std::cout << "Text: " << msg.buf << std::endl;
+      });
+
+    // Wait until the connection is closed.
+    while(connection->IsOpen() || connection->HasNewMessage()){
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
   }
 }
