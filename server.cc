@@ -17,7 +17,6 @@ int main(){
     // Wait for a connection to be made
     auto connection = listener->WaitForConnection();
 
-
     connection->add_callback<IntegerMessage>([](IntegerMessage& msg) {
         std::cout << "Integer message: " << msg.value << std::endl;
       });
@@ -27,9 +26,6 @@ int main(){
         std::cout << "Text: " << msg.buf << std::endl;
       });
 
-    // Wait until the connection is closed.
-    while(connection->IsOpen() || connection->HasNewMessage()){
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+    connection->WaitForClose();
   }
 }

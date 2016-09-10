@@ -9,22 +9,26 @@ using asio::ip::tcp;
 hermes::NetworkSocket::NetworkSocket(NetworkIO io,
                                      asio::ip::tcp::resolver::iterator endpoint)
   : m_io(io), m_socket(m_io.internals->io_service),
-    m_read_loop_started(false), m_writer_running(false) {
+    m_read_loop_started(false), m_callbacks_running(0), m_writer_running(false),
+    m_unacknowledged_messages(0) {
 
+  CallbackCounter counter(this);
   asio::async_connect(m_socket, endpoint,
-  [this](asio::error_code ec, tcp::resolver::iterator) {
-    if (!ec) {
-      start_read_loop();
-    }
-  });
+                      [this,counter](asio::error_code ec, tcp::resolver::iterator) {
+                        if (!ec) {
+                          start_read_loop();
+                        }
+                      });
 }
 
 hermes::NetworkSocket::NetworkSocket(NetworkIO io,
                                      asio::ip::tcp::socket socket)
   : m_io(io), m_socket(std::move(socket)),
-    m_writer_running(false) {
+    m_read_loop_started(false), m_callbacks_running(0), m_writer_running(false),
+    m_unacknowledged_messages(0) {
 
-  m_io.internals->io_service.post( [this]() { start_read_loop(); });
+  CallbackCounter counter(this);
+  m_io.internals->io_service.post( [this,counter]() { start_read_loop(); });
 }
 
 hermes::NetworkSocket::~NetworkSocket() {
@@ -33,11 +37,32 @@ hermes::NetworkSocket::~NetworkSocket() {
     lock, std::chrono::seconds(5),
     [this](){ return !m_socket.is_open() || m_unacknowledged_messages == 0; });
 
+  close_socket();
+
+  std::unique_lock<std::mutex> lock_all_finished(m_all_callbacks_finished_mutex);
+  m_all_callbacks_finished.wait(lock_all_finished,
+                                [this] () { return m_callbacks_running==0; } );
+}
+
+void hermes::NetworkSocket::close_socket() {
+  std::unique_lock<std::mutex> lock(m_close_mutex);
+
   if(m_socket.is_open()) {
-    m_socket.close();
+    asio::error_code ec;
+    m_socket.shutdown(asio::ip::tcp::socket::shutdown_both,ec);
+
+    try {
+      m_socket.close();
+    } catch (std::system_error&) { }
   }
-  asio::error_code ec;
-  m_socket.shutdown(asio::ip::tcp::socket::shutdown_both,ec);
+
+  m_socket_closed.notify_all();
+  m_received_message.notify_all();
+}
+
+void hermes::NetworkSocket::WaitForClose() {
+  std::unique_lock<std::mutex> lock(m_close_mutex);
+  m_socket_closed.wait(lock, [this](){ return !m_socket.is_open(); });
 }
 
 void hermes::NetworkSocket::start_read_loop() {
@@ -51,9 +76,10 @@ void hermes::NetworkSocket::start_read_loop() {
 }
 
 void hermes::NetworkSocket::do_read_header() {
+  CallbackCounter counter(this);
   asio::async_read(m_socket,
                    asio::buffer(m_current_read.header.arr, header_size),
-                   [this](asio::error_code ec, std::size_t /*length*/) {
+                   [this,counter](asio::error_code ec, std::size_t /*length*/) {
                      if (!ec) {
                        if (m_current_read.header.packed.acknowledge==0) {
                          do_read_body();
@@ -65,9 +91,8 @@ void hermes::NetworkSocket::do_read_header() {
                          do_read_header();
                        }
 
-                     } else {
-                       m_socket.close();
-                       m_received_message.notify_all();
+                     } else if (ec != asio::error::operation_aborted){
+                       close_socket();
                      }
                    });
 }
@@ -76,16 +101,16 @@ void hermes::NetworkSocket::do_read_body() {
   m_current_read.body = std::string(); // In case it is a moved-from value
   m_current_read.body.resize(m_current_read.header.packed.size, '\0');
 
+  CallbackCounter counter(this);
   asio::async_read(m_socket,
                    asio::buffer(&m_current_read.body[0], m_current_read.body.size()),
-                   [this](asio::error_code ec, std::size_t /*length*/) {
+                   [this,counter](asio::error_code ec, std::size_t /*length*/) {
                      if (!ec) {
                        write_acknowledge(m_current_read.header);
                        unpack_message();
                        do_read_header();
-                     } else {
-                       m_socket.close();
-                       m_received_message.notify_all();
+                     } else if (ec != asio::error::operation_aborted){
+                       close_socket();
                      }
                    });
 }
@@ -133,8 +158,9 @@ void hermes::NetworkSocket::write_direct(Message message) {
 }
 
 void hermes::NetworkSocket::start_writer() {
+  CallbackCounter counter(this);
   m_io.internals->io_service.post(
-    [this]() {
+    [this,counter]() {
       if (!m_writer_running) {
         m_writer_running = true;
         do_write_header();
@@ -168,29 +194,31 @@ void hermes::NetworkSocket::do_write_header() {
   }
 
   // Write the buffer to the socket.
+  CallbackCounter counter(this);
   asio::async_write(m_socket,
                     asio::buffer(m_current_write.header.arr, header_size),
-                    [this](asio::error_code ec, std::size_t /*length*/) {
+                    [this,counter](asio::error_code ec, std::size_t /*length*/) {
                       if (!ec) {
                         if(m_current_write.header.packed.acknowledge == 0) {
                           do_write_body();
                         } else {
                           do_write_header();
                         }
-                      } else {
-                        m_socket.close();
+                      } else if (ec != asio::error::operation_aborted){
+                        close_socket();
                       }
                     });
 }
 
 void hermes::NetworkSocket::do_write_body() {
+  CallbackCounter counter(this);
   asio::async_write(m_socket,
                     asio::buffer(m_current_write.body.c_str(), m_current_write.body.size()),
-                    [this](asio::error_code ec, std::size_t /*length*/) {
+                    [this,counter](asio::error_code ec, std::size_t /*length*/) {
                       if(!ec) {
                         do_write_header();
-                      } else {
-                        m_socket.close();
+                      } else if (ec != asio::error::operation_aborted){
+                        close_socket();
                       }
                     });
 }

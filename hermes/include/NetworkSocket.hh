@@ -39,6 +39,13 @@ namespace hermes {
 
     virtual ~NetworkSocket();
 
+    /// Waits until the socket has closed
+    /**
+       Useful if callbacks have been defined for all message types,
+       and the socket should now simply react to incoming messages.
+     */
+    void WaitForClose();
+
     /// Returns a message received from the socket
     /**
        If no message has been received, returns nullptr.
@@ -94,8 +101,9 @@ namespace hermes {
       auto callback = make_unique<MessageCallbackType<T> >(func);
       std::lock_guard<std::mutex> lock(m_new_callback_mutex);
       m_new_callbacks.push_back(std::move(callback));
+      CallbackCounter counter(this);
       m_io.internals->io_service.post(
-        [this]() { initialize_callback(); }
+        [this,counter]() { initialize_callback(); }
       );
     }
 
@@ -120,6 +128,42 @@ namespace hermes {
     int WriteMessagesQueued();
 
   private:
+    /// Helper struct, keeping track of the number of callbacks registered
+    /**
+       We can't let the NetworkSocket destructor end until all callbacks refering to it are done.
+       Each lambda function callback will hold one of these by value.
+       When the labmda function is destructed, it will decrease the callback counter.
+     */
+    struct CallbackCounter {
+      CallbackCounter(NetworkSocket* socket)
+        : socket(socket) {
+        socket->m_callbacks_running++;
+      }
+
+      CallbackCounter(const CallbackCounter& other)
+        : CallbackCounter(other.socket) { }
+
+      CallbackCounter& operator=(const CallbackCounter& other) = delete;
+
+      ~CallbackCounter() {
+        std::lock_guard<std::mutex> lock(socket->m_all_callbacks_finished_mutex);
+        socket->m_callbacks_running--;
+        if(!socket->m_callbacks_running) {
+          socket->m_all_callbacks_finished.notify_all();
+        }
+      }
+
+      NetworkSocket* socket;
+    };
+
+
+    /// Closes the socket.
+    /**
+       Happens either on destruction of the NetworkSocket object,
+       or when an error occurs on read/write
+     */
+    void close_socket();
+
     /// Initializes socket settings, then starts the chain of async_read
     /**
        Sets the "linger" option, so the socket won't prematurely close.
@@ -212,6 +256,18 @@ namespace hermes {
     std::mutex m_open_mutex;
     std::condition_variable m_can_write;
     std::atomic_bool m_read_loop_started;
+
+    /// Mutex for waiting on m_all_callbacks_finished
+    std::mutex m_all_callbacks_finished_mutex;
+    /// Triggered when all callbacks have finished
+    std::condition_variable m_all_callbacks_finished;
+    /// Number of callbacks currently submitted
+    std::atomic_int m_callbacks_running;
+
+    /// Mutex for waiting on socket close
+    std::mutex m_close_mutex;
+    /// Condition variable for waiting on the socket to close
+    std::condition_variable m_socket_closed;
 
     /// The current message being read from the socket
     Message m_current_read;

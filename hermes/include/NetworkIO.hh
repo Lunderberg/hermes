@@ -71,7 +71,9 @@ namespace hermes {
         : work(io_service) { }
 
       ~internals_t() {
-        io_service.stop();
+        io_service.post(
+          [this]() { io_service.stop(); }
+        );
         if(thread.joinable()) {
           thread.join();
         }
