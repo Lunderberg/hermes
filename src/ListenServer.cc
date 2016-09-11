@@ -1,9 +1,9 @@
-#include "ListenServer.hh"
+#include "hermes_detail/ListenServer.hh"
 
 #include <iostream>
 
-#include "NetworkSocket.hh"
-#include "MakeUnique.hh"
+#include "hermes_detail/NetworkSocket.hh"
+#include "hermes_detail/MakeUnique.hh"
 
 hermes::ListenServer::ListenServer(hermes::NetworkIO io,
                                    asio::ip::tcp::endpoint endpoint)

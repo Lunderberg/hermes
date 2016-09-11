@@ -1,13 +1,8 @@
-#include "NetworkIO.hh"
+#include "hermes_detail/NetworkIO.hh"
 
-#include "ListenServer.hh"
-#include "NetworkSocket.hh"
-
-#include <stdexcept> // for std::runtime_error
-#include <algorithm> // for std::copy
-#include <iterator> // for std::back_insertor
-
-#include "MakeUnique.hh"
+#include "hermes_detail/ListenServer.hh"
+#include "hermes_detail/MakeUnique.hh"
+#include "hermes_detail/NetworkSocket.hh"
 
 using asio::ip::tcp;
 

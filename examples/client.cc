@@ -3,10 +3,9 @@
 #include <iostream>
 #include <thread>
 
-#include "NetworkIO.hh"
+#include "hermes.hh"
 
 #include "IntegerMessage.hh"
-#include "Message.hh"
 #include "RawTextMessage.hh"
 
 int main(){

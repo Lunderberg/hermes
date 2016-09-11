@@ -1,11 +1,11 @@
-#include "NetworkIO.hh"
-
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <string>
+
+#include "hermes.hh"
 
 template<int N>
 struct SizedMessage {
@@ -41,7 +41,7 @@ void read_msg(hermes::NetworkSocket& socket) {
 
 template<int N>
 void test_with(hermes::NetworkSocket& socket, bool send_first) {
-  auto msg = make_unique<SizedMessage<N> >();
+  auto msg = hermes::make_unique<SizedMessage<N> >();
   msg->fill_rand();
 
   auto before = now();

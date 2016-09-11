@@ -2,9 +2,10 @@
 #include <thread>
 #include <chrono>
 
+#include "hermes.hh"
+
 #include "RawTextMessage.hh"
 #include "IntegerMessage.hh"
-#include "NetworkIO.hh"
 
 int main(){
   hermes::NetworkIO network;

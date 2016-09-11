@@ -1,8 +1,8 @@
-#include "NetworkSocket.hh"
+#include "hermes_detail/NetworkSocket.hh"
 
 #include <iostream>
 
-#include "NetworkIO.hh"
+#include "hermes_detail/NetworkIO.hh"
 
 using asio::ip::tcp;
 

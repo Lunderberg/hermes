@@ -32,31 +32,31 @@ EXE_DIRECTORIES = .
 # A list of directories containing other source files.  Each file will
 # be compiled, with the resulting source file being linked into each
 # executable.
-SRC_DIRECTORIES = src hermes/src
+SRC_DIRECTORIES = src
 
 # A list of directories containing include files.  Each directory will
 # be made available for #include directives for included files.
-INC_DIRECTORIES = include hermes/include hermes/include/asio-1.10.6
+INC_DIRECTORIES = include
 
 # A list of directories that contain libraries.  The list can also
 # contain patterns that expand to directories that contain libraries.
 # Each library is ex
-LIB_DIRECTORIES = lib?*
+LIB_DIRECTORIES = lib?* ..
 
 # If BUILD_SHARED is non-zero, shared libraries will be generated.  If
 # BUILD_SHARED is greater than BUILD_STATIC, executables will be
 # linked against the shared libraries.
-BUILD_SHARED = 1
+BUILD_SHARED = 0
 
 # If BUILD_STATIC is non-zero, static libraries will be generated.  If
 # BUILD_STATIC is greater than BUILD_SHARED, executables will be
 # linked against the static libraries.
-BUILD_STATIC = 0
+BUILD_STATIC = 1
 
 # Mandatory arguments to both C and C++ compilers.  These arguments
 # will be passed even if CPPFLAGS has been overridden by command-line
 # arguments.
-CPPFLAGS_EXTRA = -DASIO_STANDALONE -pthread -DHERMES_ENABLE_BOOST_SERIALIZE
+CPPFLAGS_EXTRA = -pthread -DHERMES_ENABLE_BOOST_SERIALIZE
 
 # Mandatory arguments to the C compiler.  These arguments will be
 # passed even if CFLAGS has been overriden by command-line arguments.
