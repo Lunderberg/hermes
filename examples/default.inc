@@ -56,7 +56,7 @@ BUILD_STATIC = 1
 # Mandatory arguments to both C and C++ compilers.  These arguments
 # will be passed even if CPPFLAGS has been overridden by command-line
 # arguments.
-CPPFLAGS_EXTRA = -pthread -DHERMES_ENABLE_BOOST_SERIALIZE
+CPPFLAGS_EXTRA = -pthread
 
 # Mandatory arguments to the C compiler.  These arguments will be
 # passed even if CFLAGS has been overriden by command-line arguments.
@@ -78,7 +78,7 @@ LDLIBS_EXTRA   =
 
 # Static libraries that should be linked into the executables.  The
 # order of libraries is the order of inclusion.
-EXTERNAL_STATIC_LIBS = $(shell locate libboost_serialization.a)
+EXTERNAL_STATIC_LIBS =
 
 # Flag to generate position-independent code.  This is passed to
 # object files being compiled to shared libraries, but not to any

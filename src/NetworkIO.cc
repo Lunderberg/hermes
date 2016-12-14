@@ -1,3 +1,5 @@
+#define ASIO_STANDALONE
+
 #include "hermes_detail/NetworkIO.hh"
 
 #include "hermes_detail/ListenServer.hh"

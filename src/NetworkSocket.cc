@@ -1,3 +1,5 @@
+#define ASIO_STANDALONE
+
 #include "hermes_detail/NetworkSocket.hh"
 
 #include <iostream>
